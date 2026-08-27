@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-signal-50: #eef7ff;
+  --color-signal-100: #d9edff;
+  --color-signal-200: #bce0ff;
+  --color-signal-300: #8eceff;
+  --color-signal-400: #59b3ff;
+  --color-signal-500: #3391ff;
+  --color-signal-600: #1d6ff5;
+  --color-signal-700: #155ae1;
+  --color-signal-800: #1848b6;
+  --color-signal-900: #193f8f;
+  --color-signal-950: #142857;
+
+  --color-neon-50: #edfff7;
+  --color-neon-100: #d5ffed;
+  --color-neon-200: #aeffdb;
+  --color-neon-300: #70ffc1;
+  --color-neon-400: #2bfda0;
+  --color-neon-500: #00e682;
+  --color-neon-600: #00bf68;
+  --color-neon-700: #009554;
+  --color-neon-800: #067545;
+  --color-neon-900: #07603b;
+  --color-neon-950: #00361f;
+
+  --color-surface-50: #f6f7f9;
+  --color-surface-100: #eceef2;
+  --color-surface-200: #d5d9e2;
+  --color-surface-300: #b0b8c7;
+  --color-surface-400: #8691a6;
+  --color-surface-500: #67738b;
+  --color-surface-600: #525c73;
+  --color-surface-700: #434b5e;
+  --color-surface-800: #3a404f;
+  --color-surface-900: #333844;
+  --color-surface-950: #13141a;
+
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-warning-500: #f59e0b;
+  --color-success-500: #22c55e;
+}
+
+@layer base {
+  * {
+    border-color: theme(--color-surface-200);
+  }
+  body {
+    background-color: theme(--color-surface-50);
+    color: theme(--color-surface-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+  }
+  body.dark {
+    background-color: theme(--color-surface-950);
+    color: theme(--color-surface-100);
+  }
+  body.dark * {
+    border-color: theme(--color-surface-800);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-400);
+}
+
+/* Canvas placeholder for visualizations */
+.viz-canvas {
+  background: linear-gradient(135deg, var(--color-surface-900) 0%, var(--color-surface-950) 100%);
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-800);
+}

@@ -1,0 +1,84 @@
+# ─── Environment ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+
+# ─── Dependencies ────────────────────────────────────────────────────
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# ─── Python ──────────────────────────────────────────────────────────
+*.pyc
+__pycache__/
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.egg
+.venv/
+venv/
+pip-log.txt
+
+# ─── JavaScript / TypeScript ─────────────────────────────────────────
+*.local
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+
+# ─── ML Model Artifacts ─────────────────────────────────────────────
+*.joblib
+*.pkl
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# ─── Generated Test Data ────────────────────────────────────────────
+SignalLens_Synthetic_Data/
+ml_dataset/
+*.zip
+
+# ─── IDE / Editor ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Logs ────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── OS-generated ───────────────────────────────────────────────────
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
