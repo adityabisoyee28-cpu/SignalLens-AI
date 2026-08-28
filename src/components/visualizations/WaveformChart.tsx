@@ -20,27 +20,28 @@ export function WaveformChart({ time, amplitude }: WaveformChartProps) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={280}>
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
         <XAxis
           dataKey="time"
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
           tickFormatter={(v) => `${v.toFixed(2)}s`}
-          stroke="#d1d5db"
+          stroke="rgba(255,255,255,0.08)"
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
-          stroke="#d1d5db"
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
+          stroke="rgba(255,255,255,0.08)"
           domain={["auto", "auto"]}
+          label={{ value: "Amplitude", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#64748b" } }}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "none",
+            backgroundColor: "#1a1e27",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 8,
-            fontSize: 12,
-            color: "#f1f5f9",
+            fontSize: 11,
+            color: "#e2e8f0",
           }}
           formatter={(value) => [Number(value).toFixed(4), "Amplitude"]}
           labelFormatter={(label) => `Time: ${(label as number).toFixed(4)}s`}

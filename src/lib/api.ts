@@ -14,6 +14,7 @@
  */
 
 import type { SignalFormat, AnalysisResult } from "@/types/signal";
+import { analyzeFileInBrowser } from "@/lib/signal-analyzer";
 
 // ─── Configuration ─────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -53,9 +54,16 @@ export async function uploadAndAnalyze(
   onProgress?: UploadProgressCallback,
 ): Promise<AnalysisResult> {
   if (API_BASE) {
-    return analyzeOnBackend(file, format, sampleRate, iqDtype, onProgress);
+    try {
+      return await analyzeOnBackend(file, format, sampleRate, iqDtype, onProgress);
+    } catch (err) {
+      // Backend unreachable — fall back to real client-side analysis
+      console.warn("Backend unavailable, using client-side DSP:", err);
+      return analyzeFileInBrowser(file, format, sampleRate);
+    }
   }
-  return mockAnalyze(file, format);
+  // No backend configured — perform real analysis in the browser
+  return analyzeFileInBrowser(file, format, sampleRate);
 }
 
 // ─── Real Backend Integration ──────────────────────────────────────────
@@ -156,95 +164,30 @@ async function analyzeOnBackend(
 export async function uploadFile(
   file: File,
   format: SignalFormat,
-  onProgress?: UploadProgressCallback,
+  _onProgress?: UploadProgressCallback,
 ): Promise<UploadResponse> {
-  if (API_BASE) {
-    // In the new API, upload + analyze happen in one step.
-    // This wrapper just returns the upload response shape.
-    return {
-      fileId: `pending-${Date.now()}`,
-      fileName: file.name,
-      fileSize: file.size,
-      format,
-    };
-  }
-  return mockUploadFile(file, format, onProgress);
+  // upload + analyze happen in one step now
+  return {
+    fileId: `pending-${Date.now()}`,
+    fileName: file.name,
+    fileSize: file.size,
+    format,
+  };
 }
 
 export async function startAnalysis(
-  fileId: string,
-  format: SignalFormat,
+  _fileId: string,
+  _format: SignalFormat,
 ): Promise<AnalysisResult> {
-  if (API_BASE) {
-    throw new UploadError(
-      "Use uploadAndAnalysis() instead — the new API combines upload and analysis.",
-      undefined,
-      "DEPRECATED",
-    );
-  }
-  return mockStartAnalysis(fileId, format);
+  throw new UploadError(
+    "Use uploadAndAnalyze() instead — the new API combines upload and analysis.",
+    undefined,
+    "DEPRECATED",
+  );
 }
 
 // ─── Mock Implementations ──────────────────────────────────────────────
 
-async function mockAnalyze(
-  file: File,
-  format: SignalFormat,
-): Promise<AnalysisResult> {
-  // Simulate processing delay
-  await new Promise((r) => setTimeout(r, 2000 + Math.random() * 2000));
-  const { generateMockAnalysis } = await import("@/lib/mock-data");
-  const result = generateMockAnalysis();
-  result.file.name = file.name;
-  result.file.format = format;
-  result.file.size = file.size;
-  return result;
-}
+// mockAnalyze removed — all analysis now uses real DSP
 
-async function mockUploadFile(
-  file: File,
-  _format: SignalFormat,
-  onProgress?: UploadProgressCallback,
-): Promise<UploadResponse> {
-  const totalBytes = file.size;
-  return new Promise((resolve) => {
-    let loaded = 0;
-    const startTime = Date.now();
-    const durationMs = 2000;
 
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const fraction = Math.min(elapsed / durationMs, 1);
-      const eased = 1 - Math.pow(1 - fraction, 3);
-      loaded = Math.floor(eased * totalBytes);
-
-      onProgress?.(loaded, totalBytes);
-
-      if (fraction < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        onProgress?.(totalBytes, totalBytes);
-        resolve({
-          fileId: crypto.randomUUID(),
-          fileName: file.name,
-          fileSize: file.size,
-          format: _format,
-        });
-      }
-    };
-
-    requestAnimationFrame(tick);
-  });
-}
-
-async function mockStartAnalysis(
-  fileId: string,
-  format: SignalFormat,
-): Promise<AnalysisResult> {
-  await new Promise((r) => setTimeout(r, 3000 + Math.random() * 3000));
-  const { generateMockAnalysis } = await import("@/lib/mock-data");
-  const result = generateMockAnalysis();
-  result.file.id = fileId;
-  result.file.format = format;
-  return result;
-}

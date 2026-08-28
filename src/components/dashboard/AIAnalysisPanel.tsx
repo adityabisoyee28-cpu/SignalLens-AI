@@ -18,18 +18,18 @@ function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
     pct >= 80
-      ? "bg-emerald-500"
+      ? "bg-neon-500"
       : pct >= 50
       ? "bg-amber-500"
-      : "bg-red-500";
+      : "bg-danger-500";
 
   return (
     <div className="w-full">
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-surface-500">Confidence</span>
-        <span className="font-semibold text-surface-900">{pct}%</span>
+      <div className="mb-1.5 flex items-center justify-between text-xs">
+        <span className="text-surface-400">Confidence</span>
+        <span className="font-semibold font-mono text-white tabular-nums">{pct}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-100">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-800">
         <div
           className={cn("h-full rounded-full transition-all duration-500", color)}
           style={{ width: `${pct}%` }}
@@ -42,7 +42,7 @@ function ConfidenceBar({ value }: { value: number }) {
 function AnomalyIndicator({ score }: { score?: number }) {
   if (score == null) {
     return (
-      <div className="flex items-center gap-2 text-sm text-surface-400">
+      <div className="flex items-center gap-2 text-sm text-surface-500/60">
         <ShieldCheck className="h-4 w-4" />
         Anomaly detection not implemented
       </div>
@@ -57,26 +57,26 @@ function AnomalyIndicator({ score }: { score?: number }) {
     <div className="flex items-center gap-3">
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold",
+          "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold font-mono",
           isLow
-            ? "bg-emerald-100 text-emerald-700"
+            ? "bg-neon-600/15 text-neon-400"
             : isMedium
-            ? "bg-amber-100 text-amber-700"
-            : "bg-red-100 text-red-700"
+            ? "bg-amber-500/15 text-amber-400"
+            : "bg-danger-500/15 text-danger-500"
         )}
       >
         {pct}
       </div>
       <div>
-        <p className="text-sm font-medium text-surface-900">Anomaly Score</p>
+        <p className="text-sm font-medium text-white">Anomaly Score</p>
         <p
           className={cn(
             "text-xs",
             isLow
-              ? "text-emerald-600"
+              ? "text-neon-400"
               : isMedium
-              ? "text-amber-600"
-              : "text-red-600"
+              ? "text-amber-400"
+              : "text-danger-500"
           )}
         >
           {isLow ? "Low — Normal signal" : isMedium ? "Medium — Possible anomaly" : "High — Significant anomaly"}
@@ -90,27 +90,29 @@ export function AIAnalysisPanel({ analysis }: AIAnalysisPanelProps) {
   const { classification, anomalyScore, detectedCharacteristics } = analysis;
 
   return (
-    <Card>
+    <Card className="!bg-surface-900/60">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Brain className="h-4 w-4 text-violet-500" />
-            AI Analysis
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/15">
+              <Brain className="h-3.5 w-3.5 text-purple-400" />
+            </div>
+            AI Signal Analysis
           </CardTitle>
           <Badge variant="default">Model v1</Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5">
         {/* Classification */}
-        <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
+        <div className="rounded-lg border border-white/[0.06] bg-surface-950/40 p-4">
           <div className="mb-3 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm font-semibold text-surface-900">
+            <CheckCircle2 className="h-4 w-4 text-neon-500" />
+            <span className="text-xs font-semibold text-surface-400 uppercase tracking-wider">
               Classification
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-surface-900">
+            <span className="text-2xl font-bold text-white">
               {classification.type}
             </span>
           </div>
@@ -119,22 +121,22 @@ export function AIAnalysisPanel({ analysis }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        {/* Anomaly Score */}
-        <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
+        {/* Anomaly */}
+        <div className="rounded-lg border border-white/[0.06] bg-surface-950/40 p-4">
           <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-semibold text-surface-900">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <span className="text-xs font-semibold text-surface-400 uppercase tracking-wider">
               Anomaly Assessment
             </span>
           </div>
           <AnomalyIndicator score={anomalyScore} />
         </div>
 
-        {/* Detected Characteristics */}
+        {/* Characteristics */}
         <div>
           <div className="mb-3 flex items-center gap-2">
-            <Tag className="h-4 w-4 text-signal-500" />
-            <span className="text-sm font-semibold text-surface-900">
+            <Tag className="h-4 w-4 text-signal-400" />
+            <span className="text-xs font-semibold text-surface-400 uppercase tracking-wider">
               Detected Characteristics
             </span>
           </div>
@@ -147,12 +149,12 @@ export function AIAnalysisPanel({ analysis }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        {/* Additional Detected Characteristics */}
+        {/* Signal Properties */}
         {detectedCharacteristics.length > 0 && (
           <div>
             <div className="mb-3 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-neon-600" />
-              <span className="text-sm font-semibold text-surface-900">
+              <CheckCircle2 className="h-4 w-4 text-neon-500" />
+              <span className="text-xs font-semibold text-surface-400 uppercase tracking-wider">
                 Signal Properties
               </span>
             </div>
@@ -160,9 +162,9 @@ export function AIAnalysisPanel({ analysis }: AIAnalysisPanelProps) {
               {detectedCharacteristics.map((char) => (
                 <div
                   key={char}
-                  className="flex items-center gap-2 rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-surface-700"
+                  className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-surface-950/30 px-3 py-2 text-sm text-surface-300"
                 >
-                  <div className="h-1.5 w-1.5 rounded-full bg-neon-500" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-neon-500 shrink-0" />
                   {char}
                 </div>
               ))}

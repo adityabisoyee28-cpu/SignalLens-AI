@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Radio,
   Upload,
   Brain,
   BarChart3,
@@ -10,10 +9,10 @@ import {
   ArrowRight,
   Zap,
   Shield,
-  Cpu,
+  Radio,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -25,54 +24,92 @@ const fadeUp = {
 };
 
 const features = [
-  {
-    icon: Upload,
-    title: "Upload Signals",
-    description: "Drag & drop .IQ and .WAV files for instant processing. Supports standard SDR capture formats.",
-  },
-  {
-    icon: BarChart3,
-    title: "Rich Visualizations",
-    description: "Waveform, FFT, PSD, Spectrogram, and Constellation diagrams — all rendered in real-time.",
-  },
-  {
-    icon: Brain,
-    title: "AI Classification",
-    description: "Machine learning models automatically classify signal types with confidence scores.",
-  },
-  {
-    icon: FileText,
-    title: "Detailed Reports",
-    description: "Export comprehensive analysis reports with metrics, visualizations, and AI findings.",
-  },
-  {
-    icon: Zap,
-    title: "Real-time Analysis",
-    description: "Fast signal processing pipeline with duration, sample rate, SNR, and dominant frequency detection.",
-  },
-  {
-    icon: Shield,
-    title: "Anomaly Detection",
-    description: "Identify unusual signal patterns and potential interference or anomalies automatically.",
-  },
+  { icon: Upload, title: "Drag & Drop Upload", desc: "Drop .WAV or .IQ files for instant processing. Standard SDR capture formats supported." },
+  { icon: BarChart3, title: "Real-time DSP", desc: "Waveform, FFT, PSD, Spectrogram, and Constellation diagrams — computed in real-time." },
+  { icon: Brain, title: "AI Classification", desc: "ML-powered signal type identification with confidence scoring and characteristic detection." },
+  { icon: FileText, title: "Export Reports", desc: "Download comprehensive analysis reports with metrics, visualizations, and AI findings." },
+  { icon: Zap, title: "Fast Pipeline", desc: "Optimized signal processing with sub-second analysis for most signal captures." },
+  { icon: Shield, title: "Secure Storage", desc: "Encrypted Supabase Storage with RLS policies and publishable-key-only access." },
 ];
 
-const steps = [
-  { step: "01", title: "Upload", description: "Drop your .IQ or .WAV capture file" },
-  { step: "02", title: "Analyze", description: "AI processes signal metrics and features" },
-  { step: "03", title: "Visualize", description: "Explore interactive signal diagrams" },
-  { step: "04", title: "Report", description: "Export findings and classification results" },
+const metrics = [
+  "Duration", "Sample Rate", "RMS", "Peak Amplitude",
+  "Dominant Frequency", "Bandwidth", "SNR", "Classification",
 ];
+
+/* ─── SVG Signal Visualization (CSS-rendered) ─────────────────────── */
+function SignalVisualization() {
+  return (
+    <div className="relative w-full max-w-lg mx-auto h-64 overflow-hidden rounded-xl border border-white/[0.06] bg-surface-900/80">
+      {/* Grid lines */}
+      <div className="absolute inset-0 grid-bg opacity-60" />
+
+      {/* Waveform line */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3391ff" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#3391ff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#00e682" stopOpacity="0.8" />
+          </linearGradient>
+          <linearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3391ff" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#3391ff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Amplitude fill */}
+        <path
+          d="M0,100 C20,80 40,60 60,100 C80,140 100,120 120,100 C140,80 160,40 180,100 C200,160 220,140 240,100 C260,60 280,30 300,100 C320,170 340,130 360,100 C380,70 400,90 400,100 L400,200 L0,200 Z"
+          fill="url(#waveFill)"
+        />
+        {/* Waveform stroke */}
+        <path
+          d="M0,100 C20,80 40,60 60,100 C80,140 100,120 120,100 C140,80 160,40 180,100 C200,160 220,140 240,100 C260,60 280,30 300,100 C320,170 340,130 360,100 C380,70 400,90 400,100"
+          fill="none"
+          stroke="url(#waveGrad)"
+          strokeWidth="2"
+        />
+        {/* Frequency bars (FFT) */}
+        {[40, 80, 120, 160, 200, 240, 280, 320, 360].map((x, i) => {
+          const h = [45, 30, 60, 20, 80, 15, 35, 25, 40][i];
+          return (
+            <rect
+              key={x}
+              x={x - 6}
+              y={180 - h}
+              width={12}
+              height={h}
+              rx={2}
+              fill="#8b5cf6"
+              fillOpacity={0.3}
+            />
+          );
+        })}
+        {/* FFT peak line */}
+        <line x1="200" y1="40" x2="200" y2="180" stroke="#8b5cf6" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+        <text x="205" y="36" fill="#8b5cf6" fontSize="10" fontFamily="monospace" opacity="0.7">f_peak</text>
+      </svg>
+
+      {/* Overlay labels */}
+      <div className="absolute top-3 left-3 flex items-center gap-1.5 text-[10px] font-mono text-signal-400/70 bg-surface-950/60 px-2 py-1 rounded">
+        <Activity className="h-3 w-3" />
+        REAL-TIME DSP
+      </div>
+      <div className="absolute top-3 right-3 text-[10px] font-mono text-neon-400/70 bg-surface-950/60 px-2 py-1 rounded">
+        48 kHz
+      </div>
+    </div>
+  );
+}
 
 export function LandingPage() {
   return (
     <div className="overflow-hidden">
-      {/* Hero */}
-      <section className="relative px-4 pb-20 pt-20 sm:px-6 sm:pb-28 sm:pt-28 lg:px-8">
-        {/* Background gradient */}
+      {/* ─── Hero ─────────────────────────────────────────────────── */}
+      <section className="relative px-4 pb-16 pt-16 sm:px-6 sm:pb-24 sm:pt-24 lg:px-8">
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 right-0 h-[500px] w-[500px] rounded-full bg-signal-100/60 blur-3xl" />
-          <div className="absolute -bottom-20 left-0 h-[400px] w-[400px] rounded-full bg-neon-100/40 blur-3xl" />
+          <div className="absolute -top-40 right-0 h-[500px] w-[500px] rounded-full bg-signal-600/[0.08] blur-[120px]" />
+          <div className="absolute -bottom-20 left-0 h-[400px] w-[400px] rounded-full bg-neon-600/[0.05] blur-[100px]" />
         </div>
 
         <div className="mx-auto max-w-4xl text-center">
@@ -80,9 +117,9 @@ export function LandingPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-signal-200 bg-signal-50 px-4 py-1.5 text-sm font-medium text-signal-700"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-signal-500/20 bg-signal-600/10 px-4 py-1.5 text-xs font-medium text-signal-400"
           >
-            <Cpu className="h-4 w-4" />
+            <Radio className="h-3.5 w-3.5" />
             SIH26147 — Smart India Hackathon
           </motion.div>
 
@@ -90,38 +127,46 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl font-bold tracking-tight text-surface-950 sm:text-5xl lg:text-6xl"
+            className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
           >
-            <span className="text-signal-600">SignalLens</span>{" "}
-            <span className="text-surface-900">AI</span>
+            <span className="text-signal-400">Signal</span>
+            <span className="text-white">Lens</span>{" "}
+            <span className="text-neon-400">AI</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-5 text-lg text-surface-500 sm:text-xl max-w-2xl mx-auto leading-relaxed"
+            className="mt-5 text-lg text-surface-400 sm:text-xl max-w-2xl mx-auto leading-relaxed"
           >
-            Automated analysis of .IQ and .WAV signal files. Upload captures from
-            any SDR and get instant AI-powered classification, rich visualizations,
-            and exportable reports.
+            Automated WAV &amp; IQ Signal Intelligence
+          </motion.p>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="mt-2 text-sm text-surface-500 max-w-xl mx-auto"
+          >
+            Transform raw signal data into measurable DSP insights, visualizations and interpretable AI analysis.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link to="/upload">
               <Button size="xl" className="min-w-[200px]">
-                Start Analysis
+                Analyze a Signal
                 <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
             <Link to="/dashboard">
               <Button variant="outline" size="xl" className="min-w-[200px]">
-                View Demo Dashboard
+                Explore Demo
               </Button>
             </Link>
           </motion.div>
@@ -131,64 +176,35 @@ export function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-10 flex items-center justify-center gap-4 text-sm text-surface-400"
+            className="mt-8 flex items-center justify-center gap-4 text-xs text-surface-500"
           >
             <span className="flex items-center gap-1.5">
-              <Waves className="h-4 w-4" /> WAV
+              <Waves className="h-3.5 w-3.5" /> WAV
             </span>
-            <span className="h-1 w-1 rounded-full bg-surface-300" />
+            <span className="h-1 w-1 rounded-full bg-surface-600" />
             <span className="flex items-center gap-1.5">
-              <Radio className="h-4 w-4" /> IQ
+              <Radio className="h-3.5 w-3.5" /> IQ
             </span>
-            <span className="h-1 w-1 rounded-full bg-surface-300" />
+            <span className="h-1 w-1 rounded-full bg-surface-600" />
             <span className="flex items-center gap-1.5">
-              <Brain className="h-4 w-4" /> AI-Powered
+              <Brain className="h-3.5 w-3.5" /> AI-Powered
             </span>
           </motion.div>
         </div>
+
+        {/* Signal Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="mt-12 mx-auto max-w-2xl"
+        >
+          <SignalVisualization />
+        </motion.div>
       </section>
 
-      {/* How It Works */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8 bg-surface-50 border-y border-surface-200">
-        <div className="mx-auto max-w-5xl">
-          <motion.h2
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center text-2xl font-bold text-surface-900 sm:text-3xl"
-          >
-            How It Works
-          </motion.h2>
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={i + 1}
-                className="relative rounded-xl border border-surface-200 bg-white p-6 text-center shadow-sm"
-              >
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-signal-600 text-sm font-bold text-white">
-                  {item.step}
-                </div>
-                <h3 className="text-base font-semibold text-surface-900">
-                  {item.title}
-                </h3>
-                <p className="mt-1 text-sm text-surface-500">
-                  {item.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8">
+      {/* ─── Features ─────────────────────────────────────────────── */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8 border-t border-white/[0.04]">
         <div className="mx-auto max-w-6xl">
           <motion.h2
             initial="hidden"
@@ -196,14 +212,14 @@ export function LandingPage() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="text-center text-2xl font-bold text-surface-900 sm:text-3xl"
+            className="text-center text-2xl font-bold text-white sm:text-3xl"
           >
             Platform Capabilities
           </motion.h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-surface-500">
-            Everything you need to analyze, classify, and understand RF signals in one place.
+          <p className="mx-auto mt-3 max-w-xl text-center text-surface-400 text-sm">
+            Everything you need to analyze, classify, and understand RF signals.
           </p>
-          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feat, i) => (
               <motion.div
                 key={feat.title}
@@ -212,28 +228,21 @@ export function LandingPage() {
                 viewport={{ once: true }}
                 variants={fadeUp}
                 custom={i + 1}
+                className="group rounded-xl border border-white/[0.06] bg-surface-900/60 p-5 transition-all duration-200 hover:border-signal-500/20 hover:bg-surface-900"
               >
-                <Card className="h-full">
-                  <CardContent className="p-6">
-                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-signal-50 text-signal-600">
-                      <feat.icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-semibold text-surface-900">
-                      {feat.title}
-                    </h3>
-                    <p className="mt-1.5 text-sm text-surface-500 leading-relaxed">
-                      {feat.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-signal-600/10 text-signal-400 group-hover:bg-signal-600/20 transition-colors">
+                  <feat.icon className="h-5 w-5" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">{feat.title}</h3>
+                <p className="mt-1.5 text-xs text-surface-400 leading-relaxed">{feat.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Technical Details */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8 bg-surface-900 text-white">
+      {/* ─── How It Works ────────────────────────────────────────── */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8 border-t border-white/[0.04]">
         <div className="mx-auto max-w-5xl">
           <motion.h2
             initial="hidden"
@@ -241,43 +250,72 @@ export function LandingPage() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="text-center text-2xl font-bold sm:text-3xl"
+            className="text-center text-2xl font-bold text-white sm:text-3xl"
           >
-            Analysis Metrics
+            How It Works
           </motion.h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-surface-400">
-            Deep signal characterization with industry-standard measurements.
-          </p>
-          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              "Duration",
-              "Sample Rate",
-              "RMS",
-              "Peak Amplitude",
-              "Dominant Frequency",
-              "Bandwidth",
-              "SNR",
-              "Classification",
-            ].map((metric, i) => (
+              { step: "01", title: "Upload", desc: "Drop your .IQ or .WAV capture file" },
+              { step: "02", title: "Process", desc: "AI processes signal metrics and features" },
+              { step: "03", title: "Visualize", desc: "Explore interactive signal diagrams" },
+              { step: "04", title: "Report", desc: "Export findings and classification results" },
+            ].map((item, i) => (
               <motion.div
-                key={metric}
+                key={item.step}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fadeUp}
                 custom={i + 1}
-                className="rounded-lg border border-surface-700 bg-surface-800/50 p-4 text-center"
+                className="relative rounded-xl border border-white/[0.06] bg-surface-900/60 p-6 text-center"
               >
-                <div className="text-sm font-medium text-signal-400">
-                  {metric}
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-signal-600/15 text-sm font-bold text-signal-400 border border-signal-500/20">
+                  {item.step}
                 </div>
+                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                <p className="mt-1 text-xs text-surface-400">{item.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ─── Metrics ──────────────────────────────────────────────── */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8 border-t border-white/[0.04]">
+        <div className="mx-auto max-w-5xl">
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            className="text-center text-2xl font-bold text-white sm:text-3xl"
+          >
+            Analysis Metrics
+          </motion.h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-surface-400 text-sm">
+            Deep signal characterization with industry-standard measurements.
+          </p>
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {metrics.map((m, i) => (
+              <motion.div
+                key={m}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i + 1}
+                className="rounded-lg border border-white/[0.06] bg-surface-900/60 p-4 text-center"
+              >
+                <div className="text-xs font-medium text-signal-400/80">{m}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CTA ─────────────────────────────────────────────────── */}
       <section className="px-4 py-20 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
@@ -287,10 +325,10 @@ export function LandingPage() {
           custom={0}
           className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-3xl font-bold text-surface-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold text-white sm:text-4xl">
             Ready to Analyze?
           </h2>
-          <p className="mt-4 text-lg text-surface-500">
+          <p className="mt-4 text-surface-400">
             Upload your first signal capture and see AI-powered analysis in seconds.
           </p>
           <Link to="/upload" className="mt-8 inline-block">

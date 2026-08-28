@@ -4,22 +4,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-signal-600 text-white shadow-md hover:bg-signal-700 active:bg-signal-800",
+          "bg-signal-600 text-white shadow-md hover:bg-signal-500 active:bg-signal-700",
         destructive:
           "bg-danger-500 text-white shadow-sm hover:bg-danger-600",
         outline:
-          "border border-surface-300 bg-white shadow-sm hover:bg-surface-50 hover:text-surface-900",
+          "border border-white/10 bg-transparent text-surface-300 hover:bg-white/[0.06] hover:text-white",
         secondary:
-          "bg-surface-100 text-surface-700 shadow-sm hover:bg-surface-200",
+          "bg-white/[0.06] text-surface-300 shadow-sm hover:bg-white/[0.1] hover:text-white",
         ghost:
-          "hover:bg-surface-100 hover:text-surface-900",
-        link: "text-signal-600 underline-offset-4 hover:underline",
-        neon: "bg-neon-600 text-white shadow-md hover:bg-neon-700 active:bg-neon-800",
+          "hover:bg-white/[0.06] hover:text-white text-surface-400",
+        link: "text-signal-400 underline-offset-4 hover:underline",
+        neon: "bg-neon-600 text-white shadow-md hover:bg-neon-500 active:bg-neon-700",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -55,7 +55,7 @@ Properties: ${aiAnalysis.detectedCharacteristics.join(", ")}
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select text in textarea
+      // silent
     }
   };
 
@@ -72,39 +72,39 @@ Properties: ${aiAnalysis.detectedCharacteristics.join(", ")}
   };
 
   return (
-    <Card>
+    <Card className="!bg-surface-900/60">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-signal-500" />
+            <FileText className="h-4 w-4 text-signal-400" />
             Analysis Report
           </CardTitle>
           <Badge variant="secondary">Generated</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Quick summary */}
-        <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
-          <h4 className="mb-2 text-sm font-semibold text-surface-900">
+        {/* Summary */}
+        <div className="rounded-lg border border-white/[0.06] bg-surface-950/40 p-4">
+          <h4 className="mb-2 text-xs font-semibold text-surface-400 uppercase tracking-wider">
             Summary
           </h4>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
             <span className="text-surface-500">File</span>
-            <span className="font-medium text-surface-900 truncate">{file.name}</span>
+            <span className="font-medium text-white truncate">{file.name}</span>
             <span className="text-surface-500">Format</span>
-            <span className="font-medium text-surface-900">{file.format}</span>
+            <span className="font-medium text-white">{file.format}</span>
             <span className="text-surface-500">Type</span>
-            <span className="font-medium text-surface-900">{aiAnalysis.classification.type}</span>
+            <span className="font-medium text-white">{aiAnalysis.classification.type}</span>
             <span className="text-surface-500">Confidence</span>
-            <span className="font-medium text-surface-900">
+            <span className="font-medium text-white font-mono tabular-nums">
               {(aiAnalysis.classification.confidence * 100).toFixed(0)}%
             </span>
           </div>
         </div>
 
-        {/* Full report preview */}
+        {/* Report preview */}
         <div className="relative">
-          <pre className="max-h-64 overflow-auto rounded-lg border border-surface-200 bg-surface-950 p-4 text-xs leading-relaxed text-surface-300">
+          <pre className="max-h-64 overflow-auto rounded-lg border border-white/[0.06] bg-surface-950 p-4 text-xs leading-relaxed text-surface-400 font-mono">
             {reportText}
           </pre>
         </div>
@@ -122,7 +122,7 @@ Properties: ${aiAnalysis.detectedCharacteristics.join(", ")}
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 text-emerald-500" />
+                <Check className="h-4 w-4 text-neon-400" />
                 Copied
               </>
             ) : (

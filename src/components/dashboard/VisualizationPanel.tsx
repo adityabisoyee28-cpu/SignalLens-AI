@@ -40,14 +40,14 @@ export function VisualizationPanel({
     : vizTabs.filter((t) => t.id !== "constellation");
 
   return (
-    <Card>
+    <Card className="!bg-surface-900/60">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Signal Visualization</CardTitle>
           <Badge variant="secondary">Interactive</Badge>
         </div>
         {/* Tab Selector */}
-        <div className="mt-3 flex flex-wrap gap-1.5 rounded-lg bg-surface-100 p-1">
+        <div className="mt-3 flex flex-wrap gap-1 rounded-lg bg-surface-950/60 p-1 border border-white/[0.04]">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -55,8 +55,8 @@ export function VisualizationPanel({
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer",
                 activeViz === tab.id
-                  ? "bg-white text-signal-700 shadow-sm"
-                  : "text-surface-500 hover:text-surface-700"
+                  ? "bg-signal-600/20 text-signal-400 border border-signal-500/20"
+                  : "text-surface-500 hover:text-white border border-transparent"
               )}
             >
               <tab.icon className="h-3.5 w-3.5" />
@@ -66,7 +66,7 @@ export function VisualizationPanel({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
+        <div className="rounded-lg border border-white/[0.06] bg-surface-950/40 p-4">
           {activeViz === "waveform" && (
             <WaveformChart
               time={data.waveform.time}

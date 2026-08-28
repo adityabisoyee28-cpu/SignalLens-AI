@@ -21,27 +21,27 @@ export function FFTChart({ frequency, magnitude }: FFTChartProps) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={280}>
       <AreaChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
         <XAxis
           dataKey="frequency"
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
           tickFormatter={(v) => formatFrequency(v)}
-          stroke="#d1d5db"
+          stroke="rgba(255,255,255,0.08)"
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
-          stroke="#d1d5db"
-          label={{ value: "dB", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "#9ca3af" } }}
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
+          stroke="rgba(255,255,255,0.08)"
+          label={{ value: "dB", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#64748b" } }}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "none",
+            backgroundColor: "#1a1e27",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 8,
-            fontSize: 12,
-            color: "#f1f5f9",
+            fontSize: 11,
+            color: "#e2e8f0",
           }}
           formatter={(value) => [`${Number(value).toFixed(1)} dB`, "Magnitude"]}
           labelFormatter={(label) => `Freq: ${formatFrequency(label as number)}`}
@@ -51,7 +51,7 @@ export function FFTChart({ frequency, magnitude }: FFTChartProps) {
           dataKey="magnitude"
           stroke="#8b5cf6"
           fill="#8b5cf6"
-          fillOpacity={0.15}
+          fillOpacity={0.12}
           strokeWidth={1.5}
           dot={false}
           isAnimationActive={false}

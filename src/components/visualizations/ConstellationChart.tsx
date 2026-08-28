@@ -20,32 +20,34 @@ export function ConstellationChart({ i, q }: ConstellationChartProps) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={280}>
       <ScatterChart>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
         <XAxis
           type="number"
           dataKey="i"
           name="In-Phase"
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
-          stroke="#d1d5db"
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
+          stroke="rgba(255,255,255,0.08)"
           domain={["auto", "auto"]}
+          label={{ value: "I", angle: 0, position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: "#64748b" } }}
         />
         <YAxis
           type="number"
           dataKey="q"
           name="Quadrature"
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
-          stroke="#d1d5db"
+          tick={{ fontSize: 10, fill: "#64748b", fontFamily: "monospace" }}
+          stroke="rgba(255,255,255,0.08)"
           domain={["auto", "auto"]}
+          label={{ value: "Q", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#64748b" } }}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "none",
+            backgroundColor: "#1a1e27",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 8,
-            fontSize: 12,
-            color: "#f1f5f9",
+            fontSize: 11,
+            color: "#e2e8f0",
           }}
           formatter={(value) => [Number(value).toFixed(4)]}
           labelFormatter={(_, payload) => {
@@ -58,7 +60,7 @@ export function ConstellationChart({ i, q }: ConstellationChartProps) {
         <Scatter
           data={data}
           fill="#f59e0b"
-          fillOpacity={0.6}
+          fillOpacity={0.5}
           isAnimationActive={false}
         />
       </ScatterChart>

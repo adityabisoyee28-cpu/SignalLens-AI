@@ -234,13 +234,29 @@ def _result_to_response(
 
     if signal_pp is not None:
         n = len(signal_pp)
-        step = max(1, n // max_waveform_pts)
+        # Use magnitude for complex, real values for real signals
         if np.iscomplexobj(signal_pp):
-            t_arr = (np.arange(0, n, step) / result.sample_rate).tolist()
-            amp_arr = np.abs(signal_pp[::step]).tolist()
+            display_sig = np.abs(signal_pp)
         else:
-            t_arr = (np.arange(0, n, step) / result.sample_rate).tolist()
-            amp_arr = signal_pp[::step].tolist()
+            display_sig = signal_pp.astype(np.float64)
+
+        if n <= max_waveform_pts:
+            t_arr = (np.arange(n) / result.sample_rate).tolist()
+            amp_arr = display_sig.tolist()
+        else:
+            # Peak-preserving windowed downsampling:
+            # Pick the sample with max absolute value per window,
+            # but store its ORIGINAL signed value to preserve waveform shape.
+            window_size = n // max_waveform_pts
+            t_arr = []
+            amp_arr = []
+            for i in range(0, n, window_size):
+                chunk = display_sig[i : i + window_size]
+                if len(chunk) == 0:
+                    break
+                peak_idx = int(np.argmax(np.abs(chunk)))
+                t_arr.append(float((i + peak_idx) / result.sample_rate))
+                amp_arr.append(float(display_sig[i + peak_idx]))
         waveform = WaveformData(time=t_arr, amplitude=amp_arr)
     else:
         waveform = WaveformData()
@@ -311,11 +327,22 @@ def _result_to_response(
     if result.iq_metrics is not None and signal_pp is not None and np.iscomplexobj(signal_pp):
         max_const_pts = 3000
         n = len(signal_pp)
-        step = max(1, n // max_const_pts)
-        constellation = ConstellationData(
-            i=np.real(signal_pp[::step]).tolist(),
-            q=np.imag(signal_pp[::step]).tolist(),
-        )
+        if n <= max_const_pts:
+            i_arr = np.real(signal_pp).tolist()
+            q_arr = np.imag(signal_pp).tolist()
+        else:
+            # Peak-preserving windowed-max for constellation
+            window_size = n // max_const_pts
+            i_arr = []
+            q_arr = []
+            for i in range(0, n, window_size):
+                chunk = signal_pp[i : i + window_size]
+                if len(chunk) == 0:
+                    break
+                peak_idx = np.argmax(np.abs(chunk))
+                i_arr.append(float(np.real(chunk[peak_idx])))
+                q_arr.append(float(np.imag(chunk[peak_idx])))
+        constellation = ConstellationData(i=i_arr, q=q_arr)
 
     visualization = VisualizationData(
         waveform=waveform,
