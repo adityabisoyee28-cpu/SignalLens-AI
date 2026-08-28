@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { FileText, Download, Copy, Check } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Download, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { AnalysisResult } from "@/types/signal";
 import { formatFrequency, formatBytes } from "@/lib/utils";
 
@@ -14,126 +12,101 @@ export function ReportPanel({ result }: ReportPanelProps) {
   const [copied, setCopied] = useState(false);
   const { file, metrics, aiAnalysis } = result;
 
-  const analyzedAtStr =
-    result.analyzedAt instanceof Date
-      ? result.analyzedAt.toISOString()
-      : typeof result.analyzedAt === "string"
-        ? result.analyzedAt
-        : new Date().toISOString();
+  const analyzedAt = result.analyzedAt instanceof Date ? result.analyzedAt : new Date();
 
-  const reportText = `
-SignalLens AI — Analysis Report
-${"=".repeat(40)}
-File: ${file.name}
-Format: ${file.format}
-Size: ${formatBytes(file.size)}
-Analyzed: ${analyzedAtStr}
+  const sections = [
+    {
+      title: "Source Information",
+      rows: [
+        ["Filename", file.name],
+        ["Format", file.format],
+        ["Size", formatBytes(file.size)],
+        ["Sample Rate", formatFrequency(metrics.sampleRate)],
+        ["Duration", `${metrics.duration.toFixed(3)} s`],
+      ],
+    },
+    {
+      title: "Time-Domain Characteristics",
+      rows: [
+        ["RMS", metrics.rms.toFixed(4)],
+        ["Peak Amplitude", metrics.peak.toFixed(4)],
+        ["Dominant Frequency", formatFrequency(metrics.dominantFrequency)],
+      ],
+    },
+    {
+      title: "Frequency-Domain Characteristics",
+      rows: [
+        ["Bandwidth", formatFrequency(metrics.bandwidth)],
+        ["SNR", metrics.snr != null ? `${metrics.snr.toFixed(1)} dB` : "N/A"],
+      ],
+    },
+    {
+      title: "Classification",
+      rows: [
+        ["Signal Type", aiAnalysis.classification.type],
+        ["Confidence", `${(aiAnalysis.classification.confidence * 100).toFixed(0)}%`],
+        ["Characteristics", aiAnalysis.classification.characteristics.join(", ")],
+        ["Properties", aiAnalysis.detectedCharacteristics.join(", ")],
+      ],
+    },
+  ];
 
-Signal Metrics
-${"-".repeat(40)}
-Duration: ${metrics.duration.toFixed(3)} s
-Sample Rate: ${formatFrequency(metrics.sampleRate)}
-RMS: ${metrics.rms.toFixed(4)}
-Peak: ${metrics.peak.toFixed(4)}
-Dominant Frequency: ${formatFrequency(metrics.dominantFrequency)}
-Bandwidth: ${formatFrequency(metrics.bandwidth)}
-SNR: ${metrics.snr != null ? `${metrics.snr.toFixed(1)} dB` : "N/A"}
-
-AI Classification
-${"-".repeat(40)}
-Type: ${aiAnalysis.classification.type}
-Confidence: ${(aiAnalysis.classification.confidence * 100).toFixed(0)}%
-${aiAnalysis.anomalyScore != null ? `Anomaly Score: ${(aiAnalysis.anomalyScore * 100).toFixed(0)}%` : ""}
-
-Characteristics: ${aiAnalysis.classification.characteristics.join(", ")}
-Properties: ${aiAnalysis.detectedCharacteristics.join(", ")}
-`.trim();
+  const reportText = `SIGNALENS — SIGNAL ANALYSIS REPORT\n${"─".repeat(50)}\n\n` +
+    sections.map((s) => `${s.title.toUpperCase()}\n${s.rows.map(([l, v]) => `  ${l}: ${v}`).join("\n")}`).join("\n\n") +
+    `\n\n${"─".repeat(50)}\nGenerated: ${analyzedAt.toISOString()}`;
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(reportText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // silent
-    }
+    try { await navigator.clipboard.writeText(reportText); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   };
 
   const handleDownload = () => {
     const blob = new Blob([reportText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `signalens-report-${file.name.replace(/\.[^.]+$/, "")}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `signalens-${file.name.replace(/\.[^.]+$/, "")}.txt`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   };
 
   return (
-    <Card className="!bg-surface-900/60">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-signal-400" />
-            Analysis Report
-          </CardTitle>
-          <Badge variant="secondary">Generated</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary */}
-        <div className="rounded-lg border border-white/[0.06] bg-surface-950/40 p-4">
-          <h4 className="mb-2 text-xs font-semibold text-surface-400 uppercase tracking-wider">
-            Summary
+    <div>
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-[10px] font-bold mono" style={{ color: "var(--color-signal-500)" }}>08</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--color-surface-500)" }}>Analysis Report</span>
+        <div className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.04)" }} />
+      </div>
+
+      {/* Report header */}
+      <div className="mb-4">
+        <p className="text-xs font-bold tracking-wider" style={{ color: "#e2e8f0" }}>SIGNALENS</p>
+        <p className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-surface-500)" }}>Signal Analysis Report</p>
+      </div>
+
+      {/* Sections */}
+      {sections.map((section) => (
+        <div key={section.title} style={{ borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", paddingBottom: "12px" }}>
+          <h4 className="text-[10px] font-medium uppercase tracking-wide mb-2" style={{ color: "var(--color-surface-500)" }}>
+            {section.title}
           </h4>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-            <span className="text-surface-500">File</span>
-            <span className="font-medium text-white truncate">{file.name}</span>
-            <span className="text-surface-500">Format</span>
-            <span className="font-medium text-white">{file.format}</span>
-            <span className="text-surface-500">Type</span>
-            <span className="font-medium text-white">{aiAnalysis.classification.type}</span>
-            <span className="text-surface-500">Confidence</span>
-            <span className="font-medium text-white font-mono tabular-nums">
-              {(aiAnalysis.classification.confidence * 100).toFixed(0)}%
-            </span>
-          </div>
+          <dl className="space-y-0.5">
+            {section.rows.map(([label, value]) => (
+              <div key={label} className="flex justify-between text-xs gap-4">
+                <dt style={{ color: "var(--color-surface-400)" }}>{label}</dt>
+                <dd className="mono text-right" style={{ color: "#e2e8f0" }}>{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
+      ))}
 
-        {/* Report preview */}
-        <div className="relative">
-          <pre className="max-h-64 overflow-auto rounded-lg border border-white/[0.06] bg-surface-950 p-4 text-xs leading-relaxed text-surface-400 font-mono">
-            {reportText}
-          </pre>
-        </div>
-
-        {/* Export actions */}
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button onClick={handleDownload} className="flex-1">
-            <Download className="h-4 w-4" />
-            Download Report
-          </Button>
-          <Button
-            onClick={handleCopy}
-            variant="outline"
-            className="flex-1"
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 text-neon-400" />
-                Copied
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copy to Clipboard
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Actions */}
+      <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <Button onClick={handleDownload} size="sm" className="gap-1.5">
+          <Download className="h-3 w-3" /> Download
+        </Button>
+        <Button onClick={handleCopy} variant="outline" size="sm" className="gap-1.5">
+          {copied ? <><Check className="h-3 w-3" style={{ color: "var(--color-neon-500)" }} /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -1,19 +1,22 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import {
-  Radio,
-  LayoutDashboard,
-  Upload,
-  Menu,
-  X,
-  Activity,
-  Wifi,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { to: "/upload", label: "Analyze Signal", icon: Upload },
+const sections = [
+  {
+    label: "Workspace",
+    items: [
+      { to: "/dashboard", label: "Overview" },
+      { to: "/upload", label: "Analyze" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { to: "/", label: "Home" },
+    ],
+  },
 ];
 
 export function Layout() {
@@ -21,189 +24,84 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-surface-950">
-      {/* Sidebar — desktop */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-surface-900 border-r border-white/[0.06] z-40">
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06]">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-signal-600/20 border border-signal-500/30">
-            <Radio className="h-5 w-5 text-signal-400" />
-          </div>
-          <div>
-            <span className="text-base font-bold text-white tracking-tight">
-              SignalLens
-            </span>
-            <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-widest text-signal-400">
-              AI
-            </span>
-          </div>
+    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface-950)" }}>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:w-48 lg:flex-col lg:fixed lg:inset-y-0 z-40"
+        style={{ backgroundColor: "var(--color-surface-900)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="px-4 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span className="text-xs font-bold tracking-wider" style={{ color: "#e2e8f0" }}>SIGNALENS</span>
         </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                  isActive
-                    ? "bg-signal-600/15 text-signal-400 border border-signal-500/20"
-                    : "text-surface-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-
-          <div className="pt-4 pb-2 px-3">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-surface-500/60">
-              System
-            </span>
-          </div>
-          {[
-            { to: "/", label: "Home", icon: Radio },
-          ].map((item) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                  isActive
-                    ? "bg-signal-600/15 text-signal-400 border border-signal-500/20"
-                    : "text-surface-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-2 py-3">
+          {sections.map((section) => (
+            <div key={section.label} className="mb-4">
+              <div className="px-2 mb-1">
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--color-surface-500)" }}>
+                  {section.label}
+                </span>
+              </div>
+              {section.items.map((item) => {
+                const active = location.pathname === item.to;
+                return (
+                  <Link key={item.to} to={item.to}
+                    className={cn("block px-2 py-1.5 text-xs rounded transition-colors", active ? "" : "hover:text-white")}
+                    style={active ? { color: "#e2e8f0", backgroundColor: "rgba(255,255,255,0.06)" } : { color: "var(--color-surface-400)" }}>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
-
-        {/* Status bar */}
-        <div className="px-4 py-4 border-t border-white/[0.06]">
-          <div className="flex items-center gap-2 text-xs text-surface-500">
-            <div className="h-2 w-2 rounded-full bg-neon-500 animate-pulse" />
-            <span>System Online</span>
-          </div>
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-surface-500/60">
-            <Activity className="h-3 w-3" />
-            <span>DSP Engine Active</span>
-          </div>
-        </div>
       </aside>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 z-50 lg:hidden" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Mobile sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-surface-900 border-r border-white/[0.06] transform transition-transform duration-200 lg:hidden",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex h-16 items-center justify-between px-5 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-signal-600/20 border border-signal-500/30">
-              <Radio className="h-5 w-5 text-signal-400" />
-            </div>
-            <span className="text-base font-bold text-white">SignalLens</span>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-surface-400 hover:text-white transition-colors">
-            <X className="h-5 w-5" />
+      <aside className={cn("fixed inset-y-0 left-0 z-50 w-48 transform transition-transform duration-150 lg:hidden",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full")}
+        style={{ backgroundColor: "var(--color-surface-900)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center justify-between px-4 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span className="text-xs font-bold tracking-wider" style={{ color: "#e2e8f0" }}>SIGNALENS</span>
+          <button onClick={() => setSidebarOpen(false)} style={{ color: "var(--color-surface-400)" }}>
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <nav className="px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-signal-600/15 text-signal-400"
-                    : "text-surface-400 hover:text-white hover:bg-white/[0.04]"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-          <Link
-            to="/"
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-surface-400 hover:text-white hover:bg-white/[0.04] transition-all"
-          >
-            <Radio className="h-4 w-4" />
-            Home
-          </Link>
+        <nav className="px-2 py-3">
+          {sections.map((section) => (
+            <div key={section.label} className="mb-4">
+              <div className="px-2 mb-1">
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--color-surface-500)" }}>
+                  {section.label}
+                </span>
+              </div>
+              {section.items.map((item) => (
+                <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}
+                  className={cn("block px-2 py-2 text-xs rounded transition-colors", location.pathname === item.to ? "" : "hover:text-white")}
+                  style={location.pathname === item.to ? { color: "#e2e8f0", backgroundColor: "rgba(255,255,255,0.06)" } : { color: "var(--color-surface-400)" }}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
         </nav>
       </aside>
 
-      {/* Main area */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 bg-surface-950/80 backdrop-blur-xl border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/[0.06] text-surface-400 hover:text-white transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div className="flex items-center gap-2 text-sm text-surface-400">
-              <Wifi className="h-3.5 w-3.5 text-neon-500" />
-              <span className="hidden sm:inline">Connected</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-white/[0.06] text-xs text-surface-400">
-              <div className="h-1.5 w-1.5 rounded-full bg-signal-500" />
-              DSP Engine
-            </div>
-            <div className="h-8 w-8 rounded-lg bg-signal-600/20 border border-signal-500/30 flex items-center justify-center text-signal-400 text-xs font-bold">
-              SL
-            </div>
-          </div>
+      {/* Main */}
+      <div className="flex-1 lg:pl-48 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-30 h-10 flex items-center px-4 lg:hidden"
+          style={{ backgroundColor: "var(--color-surface-950)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <button onClick={() => setSidebarOpen(true)} style={{ color: "var(--color-surface-400)" }}>
+            <Menu className="h-4 w-4" />
+          </button>
+          <span className="ml-3 text-xs font-bold tracking-wider" style={{ color: "#e2e8f0" }}>SIGNALENS</span>
         </header>
-
-        {/* Page content */}
         <main className="flex-1">
           <Outlet />
         </main>
-
-        {/* Footer */}
-        <footer className="border-t border-white/[0.06] bg-surface-900/50">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-              <div className="flex items-center gap-2 text-surface-500">
-                <Radio className="h-3.5 w-3.5 text-signal-500/60" />
-                <span className="text-xs">SignalLens AI — SIH26147</span>
-              </div>
-              <p className="text-[11px] text-surface-500/50">
-                Automated WAV &amp; IQ Signal Intelligence Platform
-              </p>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );

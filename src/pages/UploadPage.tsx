@@ -1,500 +1,150 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Upload,
-  FileAudio,
-  Radio,
-  X,
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Shield,
-  Zap,
-  Cpu,
-} from "lucide-react";
+import { Upload, FileAudio, Radio, X, AlertCircle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { uploadAndAnalyze, type UploadError } from "@/lib/api";
+import { uploadAndAnalyze } from "@/lib/api";
 import { validateFile, formatBytes } from "@/lib/upload-utils";
 import { uploadSignalFile } from "@/lib/storage";
 
-type FlowState =
-  | "idle"
-  | "selected"
-  | "uploading"
-  | "uploaded"
-  | "analyzing"
-  | "complete"
-  | "error";
+type FlowState = "idle" | "selected" | "uploading" | "uploaded" | "analyzing" | "complete" | "error";
 
-interface UploadFileState {
-  file: File;
-  format: "WAV" | "IQ";
-}
-
-const processingStages = [
-  "Uploading",
-  "Validating",
-  "DSP Analysis",
-  "Feature Extraction",
-  "AI Analysis",
-  "Complete",
-];
+const stages = ["Uploading", "Validating", "DSP", "Features", "Classification", "Complete"];
 
 export function UploadPage() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const [uploadFile_, setUploadFile] = useState<UploadFileState | null>(null);
+  const [file_, setFile] = useState<{ file: File; format: "WAV" | "IQ" } | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [flowState, setFlowState] = useState<FlowState>("idle");
+  const [flow, setFlow] = useState<FlowState>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [currentStage, setCurrentStage] = useState(0);
+  const [stage, setStage] = useState(0);
 
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback((f: File) => {
     setError(null);
-    const result = validateFile(file);
-    if (!result.valid) {
-      setError(result.error);
-      setFlowState("error");
-      return;
-    }
-    setUploadFile({ file, format: result.format! });
-    setFlowState("selected");
+    const r = validateFile(f);
+    if (!r.valid) { setError(r.error); setFlow("error"); return; }
+    setFile({ file: f, format: r.format! });
+    setFlow("selected");
   }, []);
 
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(true);
-  }, []);
-
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
-  }, []);
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
-    },
-    [handleFile],
-  );
-
-  const onInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
-      e.target.value = "";
-    },
-    [handleFile],
-  );
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation(); setDragging(false);
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  }, [handleFile]);
 
   const handleUpload = useCallback(async () => {
-    if (!uploadFile_ || flowState === "uploading") return;
-
-    setError(null);
-    setProgress(0);
-    setCurrentStage(0);
-    setFlowState("uploading");
-
-    // Simulate stage progression
-    const stageTimer = setInterval(() => {
-      setCurrentStage((prev) => Math.min(prev + 1, processingStages.length - 2));
-    }, 800);
-
+    if (!file_ || flow === "uploading") return;
+    setError(null); setProgress(0); setStage(0); setFlow("uploading");
+    const timer = setInterval(() => setStage((p) => Math.min(p + 1, stages.length - 2)), 800);
     try {
-      const analysisResult = await uploadAndAnalyze(
-        uploadFile_.file,
-        uploadFile_.format,
-        undefined,
-        undefined,
-        (loaded, total) => {
-          setProgress(total > 0 ? Math.round((loaded / total) * 100) : 0);
-        },
-      );
-
-      clearInterval(stageTimer);
-      setCurrentStage(processingStages.length - 1);
-      setProgress(100);
-      setFlowState("complete");
-
-      uploadSignalFile(uploadFile_.file).then(({ path, error: storageErr }) => {
-        if (storageErr && storageErr.code !== "NOT_CONFIGURED") {
-          console.warn("Supabase Storage upload failed:", storageErr.message);
-        } else if (path) {
-          console.log("File stored in Supabase:", path);
-        }
+      const result = await uploadAndAnalyze(file_.file, file_.format, undefined, undefined,
+        (l, t) => setProgress(t > 0 ? Math.round((l / t) * 100) : 0));
+      clearInterval(timer); setStage(stages.length - 1); setProgress(100); setFlow("complete");
+      uploadSignalFile(file_.file).then(({ path, error: e }) => {
+        if (e && e.code !== "NOT_CONFIGURED") console.warn("Storage:", e.message);
+        else if (path) console.log("Stored:", path);
       });
-
-      setTimeout(() => {
-        navigate("/dashboard", {
-          state: {
-            analysisResult,
-            fileName: uploadFile_.file.name,
-            format: uploadFile_.format,
-          },
-        });
-      }, 600);
+      setTimeout(() => navigate("/dashboard", { state: { analysisResult: result, fileName: file_.file.name, format: file_.format } }), 600);
     } catch (err) {
-      clearInterval(stageTimer);
-      if (err instanceof Error && err.name === "UploadError") {
-        setError((err as UploadError).message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
-      setFlowState("error");
+      clearInterval(timer);
+      setError(err instanceof Error ? err.message : "Unexpected error");
+      setFlow("error");
     }
-  }, [uploadFile_, flowState, navigate]);
+  }, [file_, flow, navigate]);
 
-  const clearFile = useCallback(() => {
-    abortRef.current?.abort();
-    setUploadFile(null);
-    setProgress(0);
-    setError(null);
-    setCurrentStage(0);
-    setFlowState("idle");
-  }, []);
-
-  const isUploading = flowState === "uploading";
-  const isProcessing =
-    flowState === "uploaded" || flowState === "analyzing" || flowState === "complete";
-  const isActive = isUploading || isProcessing;
+  const clear = useCallback(() => { setFile(null); setProgress(0); setError(null); setStage(0); setFlow("idle"); }, []);
+  const active = flow === "uploading" || flow === "uploaded" || flow === "analyzing" || flow === "complete";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <h1 className="text-2xl font-bold text-white sm:text-3xl">
-          Analyze Signal
-        </h1>
-        <p className="mt-2 text-surface-400 text-sm">
-          Upload a .WAV or .IQ capture file to begin AI-powered signal analysis.
-        </p>
-      </motion.div>
+    <div className="max-w-3xl mx-auto px-4 py-8 lg:px-8">
+      <h1 className="text-xl font-bold" style={{ color: "#e2e8f0" }}>Analyze Signal</h1>
+      <p className="mt-1 text-sm" style={{ color: "var(--color-surface-400)" }}>
+        Upload a .WAV or .IQ capture to begin analysis.
+      </p>
 
-      {/* Drop Zone */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="mt-6"
-      >
-        <Card>
-          <CardContent className="p-0">
-            <div
-              onDragOver={!isActive ? onDragOver : undefined}
-              onDragLeave={!isActive ? onDragLeave : undefined}
-              onDrop={!isActive ? onDrop : undefined}
-              onClick={
-                !uploadFile_ && !isActive
-                  ? () => inputRef.current?.click()
-                  : undefined
-              }
-              className={`
-                relative rounded-xl border-2 border-dashed p-10 sm:p-14 text-center transition-all duration-200
-                ${
-                  isActive
-                    ? "cursor-default border-signal-500/20 bg-signal-600/[0.04]"
-                    : dragging
-                      ? "cursor-copy border-signal-400 bg-signal-600/[0.08]"
-                      : flowState === "error"
-                        ? "cursor-pointer border-danger-500/30 bg-danger-500/[0.04] hover:border-danger-500/40"
-                        : uploadFile_
-                          ? "cursor-default border-neon-500/30 bg-neon-600/[0.04]"
-                          : "cursor-pointer border-white/[0.08] bg-surface-900/40 hover:border-signal-500/30 hover:bg-signal-600/[0.04]"
-                }
-              `}
-            >
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".wav,.iq,.raw,.cf32,.cs16"
-                onChange={onInputChange}
-                className="hidden"
-                disabled={isActive}
-              />
+      <div className="mt-5">
+        <div
+          onDragOver={!active ? (e) => { e.preventDefault(); setDragging(true); } : undefined}
+          onDragLeave={!active ? (e) => { e.preventDefault(); setDragging(false); } : undefined}
+          onDrop={!active ? onDrop : undefined}
+          onClick={!file_ && !active ? () => inputRef.current?.click() : undefined}
+          className="rounded-lg border-2 border-dashed p-12 text-center transition-colors"
+          style={{
+            borderColor: dragging ? "rgba(59,142,255,0.5)" : active ? "rgba(59,142,255,0.1)" : file_ ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.08)",
+            cursor: active ? "default" : "pointer",
+          }}
+        >
+          <input ref={inputRef} type="file" accept=".wav,.iq,.raw,.cf32,.cs16" className="hidden" disabled={active}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
 
-              <AnimatePresence mode="wait">
-                {/* Empty state */}
-                {!uploadFile_ && flowState === "idle" && (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div
-                      className={`mb-4 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${
-                        dragging
-                          ? "bg-signal-600/20 text-signal-400"
-                          : "bg-surface-800 text-surface-500"
-                      }`}
-                    >
-                      <Upload className="h-8 w-8" />
-                    </div>
-                    <p className="text-base font-medium text-white">
-                      {dragging ? "Drop your file here" : "Drop your signal file"}
-                    </p>
-                    <p className="mt-1 text-sm text-surface-500">
-                      or click to browse files
-                    </p>
-                    <div className="mt-4 flex items-center gap-3">
-                      <Badge variant="secondary" className="gap-1">
-                        <FileAudio className="h-3 w-3" /> WAV
-                      </Badge>
-                      <Badge variant="secondary" className="gap-1">
-                        <Radio className="h-3 w-3" /> IQ
-                      </Badge>
-                    </div>
-                    <p className="mt-3 text-xs text-surface-500/60">
-                      Max file size: 500 MB
-                    </p>
-                  </motion.div>
-                )}
+          <AnimatePresence mode="wait">
+            {!file_ && flow === "idle" && (
+              <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Upload className="h-7 w-7 mx-auto mb-3" style={{ color: dragging ? "var(--color-signal-500)" : "var(--color-surface-500)" }} />
+                <p className="text-sm font-medium" style={{ color: "#e2e8f0" }}>
+                  {dragging ? "Drop file here" : "Drop signal file or click to browse"}
+                </p>
+                <p className="mt-2 text-xs" style={{ color: "var(--color-surface-500)" }}>
+                  WAV, IQ (.iq .raw .cf32 .cs16) — max 500 MB
+                </p>
+              </motion.div>
+            )}
 
-                {/* Error */}
-                {flowState === "error" && (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-danger-500/15 text-danger-500">
-                      <AlertCircle className="h-8 w-8" />
-                    </div>
-                    <p className="text-base font-medium text-danger-500">
-                      Upload Error
-                    </p>
-                    <p className="mt-1 max-w-sm text-sm text-danger-500/70">
-                      {error}
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={(e) => { e.stopPropagation(); clearFile(); }}
-                    >
-                      Try Again
-                    </Button>
-                  </motion.div>
-                )}
+            {flow === "error" && (
+              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <AlertCircle className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-danger-500)" }} />
+                <p className="text-sm font-medium" style={{ color: "var(--color-danger-500)" }}>{error}</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={clear}>Try Again</Button>
+              </motion.div>
+            )}
 
-                {/* File selected */}
-                {uploadFile_ && !isActive && (
-                  <motion.div
-                    key="file"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-signal-600/15 text-signal-400">
-                      {uploadFile_.format === "WAV" ? (
-                        <FileAudio className="h-8 w-8" />
-                      ) : (
-                        <Radio className="h-8 w-8" />
-                      )}
-                    </div>
-                    <p className="text-base font-medium text-white">
-                      {uploadFile_.file.name}
-                    </p>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-surface-400">
-                      <Badge variant="default" className="text-[10px]">
-                        {uploadFile_.format}
-                      </Badge>
-                      <span>{formatBytes(uploadFile_.file.size)}</span>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2">
-                      <Button onClick={handleUpload} size="lg">
-                        Begin Analysis
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); clearFile(); }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Uploading */}
-                {isUploading && (
-                  <motion.div
-                    key="uploading"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-signal-600/15 text-signal-400">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                    <p className="text-base font-medium text-white">
-                      Uploading {uploadFile_?.file.name}
-                    </p>
-                    <div className="mt-4 w-full max-w-xs">
-                      <Progress value={progress} className="h-2" />
-                      <p className="mt-2 text-center text-xs text-surface-500">
-                        {progress}% — {formatBytes(uploadFile_!.file.size)}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-3 text-surface-500"
-                      onClick={(e) => { e.stopPropagation(); clearFile(); }}
-                    >
-                      Cancel
-                    </Button>
-                  </motion.div>
-                )}
-
-                {/* Processing stages */}
-                {isProcessing && (
-                  <motion.div
-                    key="processing"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-neon-600/15 text-neon-400">
-                      {flowState === "complete" ? (
-                        <CheckCircle2 className="h-8 w-8" />
-                      ) : (
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      )}
-                    </div>
-                    <p className="text-base font-medium text-white">
-                      {flowState === "complete"
-                        ? "Analysis Complete"
-                        : processingStages[currentStage] + "…"}
-                    </p>
-
-                    {/* Stage indicators */}
-                    <div className="mt-5 flex items-center gap-1">
-                      {processingStages.map((stage, idx) => (
-                        <div
-                          key={stage}
-                          className={`h-1.5 rounded-full transition-all duration-300 ${
-                            idx < currentStage
-                              ? "bg-neon-500 w-6"
-                              : idx === currentStage
-                                ? "bg-signal-400 w-8"
-                                : "bg-surface-700 w-4"
-                          }`}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="mt-4 w-full max-w-xs">
-                      <Progress value={flowState === "complete" ? 100 : progress} className="h-1.5" />
-                      <p className="mt-2 text-center text-xs text-surface-500">
-                        {flowState === "complete"
-                          ? "Redirecting to dashboard…"
-                          : "Processing signal data"}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Inline error */}
-        {error && flowState !== "error" && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 flex items-center gap-2 rounded-lg border border-danger-500/20 bg-danger-500/[0.06] p-3 text-sm text-danger-500"
-          >
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-
-        {/* Info cards */}
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Card className="!bg-surface-900/60">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal-600/10 text-signal-400">
-                  <FileAudio className="h-4 w-4" />
+            {file_ && !active && (
+              <motion.div key="selected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {file_.format === "WAV" ? <FileAudio className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-signal-500)" }} />
+                  : <Radio className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-signal-500)" }} />}
+                <p className="text-sm font-medium" style={{ color: "#e2e8f0" }}>{file_.file.name}</p>
+                <p className="mt-1 text-xs" style={{ color: "var(--color-surface-400)" }}>{file_.format} / {formatBytes(file_.file.size)}</p>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <Button onClick={handleUpload}>Begin Analysis <ArrowRight className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); clear(); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">WAV Files</h3>
-                  <p className="mt-0.5 text-xs text-surface-400 leading-relaxed">
-                    Standard audio from SDR receivers. 8-bit, 16-bit, 24-bit, 32-bit float PCM.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-[10px]">.wav</Badge>
-                  </div>
+              </motion.div>
+            )}
+
+            {flow === "uploading" && (
+              <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "var(--color-signal-500)" }} />
+                <p className="text-sm" style={{ color: "#e2e8f0" }}>Uploading {file_?.file.name}</p>
+                <div className="mt-3 max-w-xs mx-auto">
+                  <Progress value={progress} className="h-1" />
+                  <p className="mt-1 text-center text-xs" style={{ color: "var(--color-surface-500)" }}>{progress}%</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="!bg-surface-900/60">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-600/10 text-purple-400">
-                  <Radio className="h-4 w-4" />
+              </motion.div>
+            )}
+
+            {(flow === "uploaded" || flow === "analyzing" || flow === "complete") && (
+              <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {flow === "complete" ? <CheckCircle2 className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-neon-500)" }} />
+                  : <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "var(--color-signal-500)" }} />}
+                <p className="text-sm" style={{ color: "#e2e8f0" }}>
+                  {flow === "complete" ? "Complete" : stages[stage] + "…"}
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-1">
+                  {stages.map((_, i) => (
+                    <div key={i} className="h-0.5 rounded-full transition-all duration-300"
+                      style={{ width: i < stage ? "12px" : i === stage ? "20px" : "8px", backgroundColor: i < stage ? "var(--color-neon-500)" : i === stage ? "var(--color-signal-500)" : "rgba(255,255,255,0.08)" }} />
+                  ))}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">IQ Files</h3>
-                  <p className="mt-0.5 text-xs text-surface-400 leading-relaxed">
-                    Complex baseband captures with in-phase and quadrature data.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {[".iq", ".raw", ".cf32", ".cs16"].map((ext) => (
-                      <Badge key={ext} variant="outline" className="text-[10px]">{ext}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-
-        {/* Requirements */}
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="flex items-center gap-2 text-xs text-surface-500">
-            <Shield className="h-3.5 w-3.5 text-surface-500/60" />
-            <span>File validation</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-surface-500">
-            <Zap className="h-3.5 w-3.5 text-surface-500/60" />
-            <span>Max 500 MB</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-surface-500">
-            <Cpu className="h-3.5 w-3.5 text-surface-500/60" />
-            <span>WAV, IQ (.iq .raw .cf32 .cs16)</span>
-          </div>
-        </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
