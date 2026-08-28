@@ -1,23 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/analyze",
-      "destination": "/api/main.py"
-    },
-    {
-      "source": "/health",
-      "destination": "/api/main.py"
-    },
-    {
-      "source": "/docs",
-      "destination": "/api/main.py"
-    },
-    {
-      "source": "/redoc",
-      "destination": "/api/main.py"
-    },
-    {
-      "source": "/((?!assets/).*)",
+      "source": "/((?!assets/|api/).*)",
       "destination": "/index.html"
     }
   ]
