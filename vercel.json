@@ -1,5 +1,24 @@
 {
   "rewrites": [
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    {
+      "source": "/analyze",
+      "destination": "/api/main.py"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/main.py"
+    },
+    {
+      "source": "/docs",
+      "destination": "/api/main.py"
+    },
+    {
+      "source": "/redoc",
+      "destination": "/api/main.py"
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
+    }
   ]
 }
