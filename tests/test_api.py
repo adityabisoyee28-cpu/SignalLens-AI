@@ -21,12 +21,12 @@ from scipy.io import wavfile
 
 # ─── App Setup ────────────────────────────────────────────────────────
 
-from api.main import app, _train_ml_model
+from api.main import app, _load_ml_model
 
 client = TestClient(app)
 
-# Train ML model at module level (same as server startup)
-_train_ml_model()
+# Load pre-trained ML model at module level (same as server startup)
+_load_ml_model()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────

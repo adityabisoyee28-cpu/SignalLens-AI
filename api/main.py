@@ -22,6 +22,7 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -30,9 +31,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from signalens.analysis import AnalysisResult, analyze_signal
 from signalens.classifier import (
-    generate_synthetic_dataset,
+    load_model,
     predict_signal,
-    train_model,
 )
 from signalens.loaders import LoadError, load_iq, load_wav, validate_file
 from signalens.preprocessing import preprocess_signal
@@ -69,28 +69,30 @@ _ml_model = None
 _ml_scaler = None
 
 
-def _train_ml_model():
-    """Train the synthetic classifier so it's ready for requests."""
+def _load_ml_model():
+    """Load the pre-trained ML classifier from disk."""
     global _ml_model, _ml_scaler
     try:
-        logger.info("Training ML classifier on synthetic data...")
-        X, y = generate_synthetic_dataset(n_per_class=100, seed=42)
-        result = train_model(X, y)
-        _ml_model = result["model"]
-        _ml_scaler = result["scaler"]
-        logger.info(
-            "ML classifier ready (accuracy: %.1f%%)", result["accuracy"] * 100
-        )
+        model_path = Path(__file__).resolve().parent.parent / "signalens_model.joblib"
+        scaler_path = Path(__file__).resolve().parent.parent / "signalens_scaler.joblib"
+        if model_path.exists() and scaler_path.exists():
+            logger.info("Loading pre-trained ML classifier...")
+            _ml_model, _ml_scaler = load_model(model_path, scaler_path)
+            logger.info("ML classifier loaded from disk.")
+        else:
+            logger.info("No pre-trained model found — ML predictions disabled.")
+            _ml_model = None
+            _ml_scaler = None
     except Exception as e:
-        logger.warning("ML classifier training failed: %s", e)
+        logger.warning("ML classifier loading failed: %s", e)
         _ml_model = None
         _ml_scaler = None
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Lifespan context manager: trains ML model on startup."""
-    _train_ml_model()
+    """Lifespan context manager: loads ML model on startup."""
+    _load_ml_model()
     # Log Supabase status on startup
     if is_configured():
         logger.info("Supabase database connected — analysis results will be persisted.")

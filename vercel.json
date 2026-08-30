@@ -1,8 +1,26 @@
 {
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": [
+          "signalens/**",
+          "signalens_model.joblib",
+          "signalens_scaler.joblib"
+        ]
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static"
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "outputDirectory": "dist"
 }
