@@ -13,11 +13,7 @@
   ],
   "functions": {
     "api/index.py": {
-      "includeFiles": [
-        "signalens/**",
-        "signalens_model.joblib",
-        "signalens_scaler.joblib"
-      ]
+      "includeFiles": "signalens/**/*.{py,txt},signalens_*.joblib,requirements.txt"
     }
   }
 }
