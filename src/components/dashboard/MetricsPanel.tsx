@@ -24,10 +24,10 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-2">
       {items.map((m) => (
         <div key={m.label}>
-          <dt className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--color-surface-500)" }}>
+          <dt className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "#9ca3af" }}>
             {m.label}
           </dt>
-          <dd className="mt-0.5 text-sm font-bold mono" style={{ color: "#e2e8f0" }}>
+          <dd className="mt-0.5 text-sm font-bold mono" style={{ color: "#1f2937" }}>
             {m.value}
           </dd>
         </div>

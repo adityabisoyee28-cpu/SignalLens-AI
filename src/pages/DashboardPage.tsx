@@ -26,9 +26,9 @@ export function DashboardPage() {
   if (!result) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <Radio className="h-6 w-6 mx-auto mb-3" style={{ color: "var(--color-surface-500)", opacity: 0.3 }} />
-        <h1 className="text-lg font-bold" style={{ color: "#e2e8f0" }}>No Analysis Data</h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--color-surface-400)" }}>Upload a signal file to begin.</p>
+        <Radio className="h-6 w-6 mx-auto mb-3" style={{ color: "#d1d5db" }} />
+        <h1 className="text-lg font-bold" style={{ color: "#1f2937" }}>No Analysis Data</h1>
+        <p className="mt-1 text-sm" style={{ color: "#6b7280" }}>Upload a signal file to begin.</p>
         <Link to="/upload" className="mt-4 inline-block"><Button size="sm">Go to Upload</Button></Link>
       </div>
     );
@@ -36,47 +36,46 @@ export function DashboardPage() {
 
   const isIQ = result.file.format === "IQ";
 
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-5 lg:px-8">
-      {/* Signal header — the key information strip */}
+      {/* Signal header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pb-4"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        style={{ borderBottom: "1px solid #e8ddd0" }}>
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--color-surface-500)" }}>
+          <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "#9ca3af" }}>
             Signal Analysis
           </p>
           <div className="flex items-center gap-2">
-            {isIQ ? <Radio className="h-4 w-4" style={{ color: "var(--color-surface-400)" }} />
-              : <FileAudio className="h-4 w-4" style={{ color: "var(--color-surface-400)" }} />}
-            <h1 className="text-lg font-bold" style={{ color: "#e2e8f0" }}>{result.file.name}</h1>
+            {isIQ ? <Radio className="h-4 w-4" style={{ color: "#6b7280" }} />
+              : <FileAudio className="h-4 w-4" style={{ color: "#6b7280" }} />}
+            <h1 className="text-lg font-bold" style={{ color: "#1f2937" }}>{result.file.name}</h1>
           </div>
-          <p className="mt-0.5 text-xs mono" style={{ color: "var(--color-surface-400)" }}>
+          <p className="mt-0.5 text-xs mono" style={{ color: "#6b7280" }}>
             {result.file.format} / {formatFrequency(result.metrics.sampleRate)} / {result.metrics.duration.toFixed(3)} s
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded"
-            style={{ backgroundColor: "rgba(16,185,129,0.1)", color: "var(--color-neon-500)" }}>
+          <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-md"
+            style={{ backgroundColor: "#dcfce7", color: "#16a34a" }}>
             Analysis Complete
           </span>
           <Link to="/upload"><Button variant="outline" size="sm"><Upload className="h-3 w-3" /> New</Button></Link>
         </div>
       </div>
 
-      {/* Metrics — horizontal strip, not cards */}
-      <div className="py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      {/* Metrics */}
+      <div className="py-4" style={{ borderBottom: "1px solid #f0ebe4" }}>
         <MetricsPanel metrics={result.metrics} />
       </div>
 
-      {/* Charts — main content, large */}
-      <div className="py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      {/* Charts */}
+      <div className="py-4" style={{ borderBottom: "1px solid #f0ebe4" }}>
         <VisualizationPanel data={result.visualization} showConstellation={isIQ} />
       </div>
 
-      {/* Classification + Features — side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="pr-0 lg:pr-6 pb-4 lg:pb-0" style={{ borderRight: "none", ...(typeof window !== "undefined" && window.innerWidth >= 1024 ? { borderRight: "1px solid rgba(255,255,255,0.04)" } : {}) }}>
+      {/* Classification + Features */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 py-4" style={{ borderBottom: "1px solid #f0ebe4" }}>
+        <div className="pr-0 lg:pr-6 pb-4 lg:pb-0" style={{ borderRight: typeof window !== "undefined" && window.innerWidth >= 1024 ? "1px solid #f0ebe4" : "none" }}>
           <AIAnalysisPanel analysis={result.aiAnalysis} />
         </div>
         <div className="pl-0 lg:pl-6">

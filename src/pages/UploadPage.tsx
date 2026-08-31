@@ -60,8 +60,8 @@ export function UploadPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 lg:px-8">
-      <h1 className="text-xl font-bold" style={{ color: "#e2e8f0" }}>Analyze Signal</h1>
-      <p className="mt-1 text-sm" style={{ color: "var(--color-surface-400)" }}>
+      <h1 className="text-xl font-bold" style={{ color: "#1f2937" }}>Analyze Signal</h1>
+      <p className="mt-1 text-sm" style={{ color: "#6b7280" }}>
         Upload a .WAV or .IQ capture to begin analysis.
       </p>
 
@@ -73,8 +73,10 @@ export function UploadPage() {
           onClick={!file_ && !active ? () => inputRef.current?.click() : undefined}
           className="rounded-lg border-2 border-dashed p-12 text-center transition-colors"
           style={{
-            borderColor: dragging ? "rgba(59,142,255,0.5)" : active ? "rgba(59,142,255,0.1)" : file_ ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.08)",
+            borderColor: dragging ? "#e97b2c" : active ? "#fde8cc" : file_ ? "#bbf7d0" : "#e8ddd0",
+            backgroundColor: dragging ? "#fff8f0" : active ? "#fffcf7" : "#ffffff",
             cursor: active ? "default" : "pointer",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           }}
         >
           <input ref={inputRef} type="file" accept=".wav,.iq,.raw,.cf32,.cs16" className="hidden" disabled={active}
@@ -83,11 +85,11 @@ export function UploadPage() {
           <AnimatePresence mode="wait">
             {!file_ && flow === "idle" && (
               <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <Upload className="h-7 w-7 mx-auto mb-3" style={{ color: dragging ? "var(--color-signal-500)" : "var(--color-surface-500)" }} />
-                <p className="text-sm font-medium" style={{ color: "#e2e8f0" }}>
+                <Upload className="h-7 w-7 mx-auto mb-3" style={{ color: dragging ? "#e97b2c" : "#9ca3af" }} />
+                <p className="text-sm font-medium" style={{ color: "#1f2937" }}>
                   {dragging ? "Drop file here" : "Drop signal file or click to browse"}
                 </p>
-                <p className="mt-2 text-xs" style={{ color: "var(--color-surface-500)" }}>
+                <p className="mt-2 text-xs" style={{ color: "#9ca3af" }}>
                   WAV, IQ (.iq .raw .cf32 .cs16) — max 500 MB
                 </p>
               </motion.div>
@@ -95,18 +97,18 @@ export function UploadPage() {
 
             {flow === "error" && (
               <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <AlertCircle className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-danger-500)" }} />
-                <p className="text-sm font-medium" style={{ color: "var(--color-danger-500)" }}>{error}</p>
+                <AlertCircle className="h-7 w-7 mx-auto mb-3" style={{ color: "#dc2626" }} />
+                <p className="text-sm font-medium" style={{ color: "#dc2626" }}>{error}</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={clear}>Try Again</Button>
               </motion.div>
             )}
 
             {file_ && !active && (
               <motion.div key="selected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {file_.format === "WAV" ? <FileAudio className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-signal-500)" }} />
-                  : <Radio className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-signal-500)" }} />}
-                <p className="text-sm font-medium" style={{ color: "#e2e8f0" }}>{file_.file.name}</p>
-                <p className="mt-1 text-xs" style={{ color: "var(--color-surface-400)" }}>{file_.format} / {formatBytes(file_.file.size)}</p>
+                {file_.format === "WAV" ? <FileAudio className="h-7 w-7 mx-auto mb-3" style={{ color: "#e97b2c" }} />
+                  : <Radio className="h-7 w-7 mx-auto mb-3" style={{ color: "#e97b2c" }} />}
+                <p className="text-sm font-medium" style={{ color: "#1f2937" }}>{file_.file.name}</p>
+                <p className="mt-1 text-xs" style={{ color: "#6b7280" }}>{file_.format} / {formatBytes(file_.file.size)}</p>
                 <div className="mt-4 flex items-center justify-center gap-2">
                   <Button onClick={handleUpload}>Begin Analysis <ArrowRight className="h-3.5 w-3.5" /></Button>
                   <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); clear(); }}>
@@ -118,26 +120,26 @@ export function UploadPage() {
 
             {flow === "uploading" && (
               <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "var(--color-signal-500)" }} />
-                <p className="text-sm" style={{ color: "#e2e8f0" }}>Uploading {file_?.file.name}</p>
+                <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "#e97b2c" }} />
+                <p className="text-sm" style={{ color: "#1f2937" }}>Uploading {file_?.file.name}</p>
                 <div className="mt-3 max-w-xs mx-auto">
                   <Progress value={progress} className="h-1" />
-                  <p className="mt-1 text-center text-xs" style={{ color: "var(--color-surface-500)" }}>{progress}%</p>
+                  <p className="mt-1 text-center text-xs" style={{ color: "#9ca3af" }}>{progress}%</p>
                 </div>
               </motion.div>
             )}
 
             {(flow === "uploaded" || flow === "analyzing" || flow === "complete") && (
               <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {flow === "complete" ? <CheckCircle2 className="h-7 w-7 mx-auto mb-3" style={{ color: "var(--color-neon-500)" }} />
-                  : <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "var(--color-signal-500)" }} />}
-                <p className="text-sm" style={{ color: "#e2e8f0" }}>
+                {flow === "complete" ? <CheckCircle2 className="h-7 w-7 mx-auto mb-3" style={{ color: "#16a34a" }} />
+                  : <Loader2 className="h-7 w-7 mx-auto mb-3 animate-spin" style={{ color: "#e97b2c" }} />}
+                <p className="text-sm" style={{ color: "#1f2937" }}>
                   {flow === "complete" ? "Complete" : stages[stage] + "…"}
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-1">
                   {stages.map((_, i) => (
                     <div key={i} className="h-0.5 rounded-full transition-all duration-300"
-                      style={{ width: i < stage ? "12px" : i === stage ? "20px" : "8px", backgroundColor: i < stage ? "var(--color-neon-500)" : i === stage ? "var(--color-signal-500)" : "rgba(255,255,255,0.08)" }} />
+                      style={{ width: i < stage ? "12px" : i === stage ? "20px" : "8px", backgroundColor: i < stage ? "#16a34a" : i === stage ? "#e97b2c" : "#e8ddd0" }} />
                   ))}
                 </div>
               </motion.div>

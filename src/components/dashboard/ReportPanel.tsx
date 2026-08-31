@@ -70,41 +70,38 @@ export function ReportPanel({ result }: ReportPanelProps) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-[10px] font-bold mono" style={{ color: "var(--color-signal-500)" }}>08</span>
-        <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--color-surface-500)" }}>Analysis Report</span>
-        <div className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.04)" }} />
+        <span className="text-[10px] font-bold mono" style={{ color: "#e97b2c" }}>08</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "#9ca3af" }}>Analysis Report</span>
+        <div className="flex-1 h-px" style={{ backgroundColor: "#f0ebe4" }} />
       </div>
 
-      {/* Report header */}
       <div className="mb-4">
-        <p className="text-xs font-bold tracking-wider" style={{ color: "#e2e8f0" }}>SIGNALENS</p>
-        <p className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-surface-500)" }}>Signal Analysis Report</p>
+        <p className="text-xs font-bold tracking-wider" style={{ color: "#b85812" }}>SIGNALENS</p>
+        <p className="text-[10px] uppercase tracking-widest" style={{ color: "#9ca3af" }}>Signal Analysis Report</p>
       </div>
 
-      {/* Sections */}
       {sections.map((section) => (
-        <div key={section.title} style={{ borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "12px", paddingBottom: "12px" }}>
-          <h4 className="text-[10px] font-medium uppercase tracking-wide mb-2" style={{ color: "var(--color-surface-500)" }}>
+        <div key={section.title} style={{ borderTop: "1px solid #f0ebe4", paddingTop: "12px", paddingBottom: "12px" }}>
+          <h4 className="text-[10px] font-medium uppercase tracking-wide mb-2" style={{ color: "#9ca3af" }}>
             {section.title}
           </h4>
           <dl className="space-y-0.5">
             {section.rows.map(([label, value]) => (
               <div key={label} className="flex justify-between text-xs gap-4">
-                <dt style={{ color: "var(--color-surface-400)" }}>{label}</dt>
-                <dd className="mono text-right" style={{ color: "#e2e8f0" }}>{value}</dd>
+                <dt style={{ color: "#6b7280" }}>{label}</dt>
+                <dd className="mono text-right" style={{ color: "#1f2937" }}>{value}</dd>
               </div>
             ))}
           </dl>
         </div>
       ))}
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid #f0ebe4" }}>
         <Button onClick={handleDownload} size="sm" className="gap-1.5">
           <Download className="h-3 w-3" /> Download
         </Button>
         <Button onClick={handleCopy} variant="outline" size="sm" className="gap-1.5">
-          {copied ? <><Check className="h-3 w-3" style={{ color: "var(--color-neon-500)" }} /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+          {copied ? <><Check className="h-3 w-3" style={{ color: "#16a34a" }} /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
         </Button>
       </div>
     </div>

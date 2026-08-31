@@ -7,15 +7,15 @@ export function PSDChart({ frequency, power }: { frequency: number[]; power: num
   return (
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.025)" />
-        <XAxis dataKey="frequency" tick={{ fontSize: 9, fill: "#475569", fontFamily: "monospace" }}
-          tickFormatter={(v) => formatFrequency(v)} stroke="rgba(255,255,255,0.04)" />
-        <YAxis tick={{ fontSize: 9, fill: "#475569", fontFamily: "monospace" }}
-          stroke="rgba(255,255,255,0.04)" width={40} />
-        <Tooltip contentStyle={{ backgroundColor: "#0c1220", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, fontSize: 11, color: "#c8d1dc" }}
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
+        <XAxis dataKey="frequency" tick={{ fontSize: 9, fill: "#9ca3af", fontFamily: "monospace" }}
+          tickFormatter={(v) => formatFrequency(v)} stroke="#e8ddd0" />
+        <YAxis tick={{ fontSize: 9, fill: "#9ca3af", fontFamily: "monospace" }}
+          stroke="#e8ddd0" width={40} />
+        <Tooltip contentStyle={{ backgroundColor: "#fffdf8", border: "1px solid #e8ddd0", borderRadius: 6, fontSize: 11, color: "#1f2937", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
           formatter={(v) => [`${Number(v).toFixed(1)} dB/Hz`, "Power"]}
           labelFormatter={(l) => `f = ${formatFrequency(l as number)}`} />
-        <Area type="monotone" dataKey="power" stroke="#10b981" fill="#10b981" fillOpacity={0.06} strokeWidth={1} dot={false} isAnimationActive={false} />
+        <Area type="monotone" dataKey="power" stroke="#d97706" fill="#d97706" fillOpacity={0.08} strokeWidth={1.2} dot={false} isAnimationActive={false} />
       </AreaChart>
     </ResponsiveContainer>
   );

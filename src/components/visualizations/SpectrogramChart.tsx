@@ -12,22 +12,17 @@ export function SpectrogramChart({ data }: { data: number[][] }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Measure actual container width
     const containerWidth = container.clientWidth;
     const displayHeight = 180;
 
-    // Set canvas internal resolution to match display size (1:1 pixel mapping)
     canvas.width = containerWidth;
     canvas.height = displayHeight;
-
-    // Set CSS size
     canvas.style.width = `${containerWidth}px`;
     canvas.style.height = `${displayHeight}px`;
 
     const rows = data.length;
     const cols = data[0].length;
 
-    // Find min/max for color normalization
     let min = Infinity;
     let max = -Infinity;
     for (const row of data) {
@@ -37,7 +32,6 @@ export function SpectrogramChart({ data }: { data: number[][] }) {
       }
     }
 
-    // Create ImageData for fast pixel-level rendering
     const imageData = ctx.createImageData(containerWidth, displayHeight);
     const pixels = imageData.data;
 
@@ -47,27 +41,24 @@ export function SpectrogramChart({ data }: { data: number[][] }) {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const n = Math.max(0, Math.min(1, (data[r][c] - min) / (max - min || 1)));
-        // Blue → Cyan → Yellow → Red
+        // Warm scientific gradient: cream → yellow → orange → red
         let red: number, green: number, blue: number;
-        if (n < 0.25) {
-          red = 0;
-          green = Math.round(n * 4 * 180);
-          blue = Math.round(200 - n * 4 * 200);
-        } else if (n < 0.5) {
-          red = 0;
-          green = Math.round(180);
-          blue = Math.round(0);
-        } else if (n < 0.75) {
-          red = Math.round((n - 0.5) * 4 * 255);
-          green = Math.round(180 - (n - 0.5) * 4 * 100);
-          blue = 0;
+        if (n < 0.2) {
+          red = 255; green = 250; blue = 230;
+        } else if (n < 0.4) {
+          const t = (n - 0.2) / 0.2;
+          red = 255; green = Math.round(250 - t * 70); blue = Math.round(230 - t * 200);
+        } else if (n < 0.6) {
+          const t = (n - 0.4) / 0.2;
+          red = 255; green = Math.round(180 - t * 60); blue = Math.round(30 - t * 30);
+        } else if (n < 0.8) {
+          const t = (n - 0.6) / 0.2;
+          red = 255; green = Math.round(120 - t * 80); blue = 0;
         } else {
-          red = 255;
-          green = Math.round(80 - (n - 0.75) * 4 * 80);
-          blue = 0;
+          const t = (n - 0.8) / 0.2;
+          red = Math.round(255 - t * 60); green = Math.round(40 - t * 40); blue = 0;
         }
 
-        // Fill the rectangular cell
         const x0 = Math.floor(c * cw);
         const y0 = Math.floor(r * ch);
         const x1 = Math.min(Math.ceil((c + 1) * cw), containerWidth);
@@ -90,21 +81,16 @@ export function SpectrogramChart({ data }: { data: number[][] }) {
 
   useEffect(() => {
     draw();
-
-    // Redraw on resize
     const container = containerRef.current;
     if (!container) return;
-
-    const observer = new ResizeObserver(() => {
-      draw();
-    });
+    const observer = new ResizeObserver(() => { draw(); });
     observer.observe(container);
     return () => observer.disconnect();
   }, [draw]);
 
   if (!data || data.length === 0 || !data[0]?.length) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm" style={{ color: "var(--color-surface-500)" }}>
+      <div className="flex items-center justify-center py-12 text-sm" style={{ color: "#9ca3af" }}>
         No spectrogram data available
       </div>
     );
@@ -113,7 +99,7 @@ export function SpectrogramChart({ data }: { data: number[][] }) {
   return (
     <div ref={containerRef} className="w-full">
       <canvas ref={canvasRef} style={{ display: "block" }} />
-      <div className="flex justify-between mt-2 text-[10px] mono" style={{ color: "var(--color-surface-500)" }}>
+      <div className="flex justify-between mt-2 text-[10px] mono" style={{ color: "#9ca3af" }}>
         <span>Time →</span>
         <span>0 Hz → {((data[0]?.length || 0) * 100).toFixed(0)} Hz</span>
         <span>dB (power)</span>
