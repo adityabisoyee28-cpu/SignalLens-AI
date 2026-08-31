@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileAudio, Radio, X, AlertCircle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileAudio, Radio, Mic, X, AlertCircle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { uploadAndAnalyze } from "@/lib/api";
@@ -15,7 +15,7 @@ const stages = ["Uploading", "Validating", "DSP", "Features", "Classification", 
 export function UploadPage() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file_, setFile] = useState<{ file: File; format: "WAV" | "IQ" } | null>(null);
+  const [file_, setFile] = useState<{ file: File; format: "WAV" | "IQ" | "OGG" } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [flow, setFlow] = useState<FlowState>("idle");
   const [progress, setProgress] = useState(0);
@@ -62,7 +62,7 @@ export function UploadPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 lg:px-8">
       <h1 className="text-xl font-bold" style={{ color: "#1f2937" }}>Analyze Signal</h1>
       <p className="mt-1 text-sm" style={{ color: "#6b7280" }}>
-        Upload a .WAV or .IQ capture to begin analysis.
+        Upload a .WAV, .OGG, or .IQ capture to begin analysis.
       </p>
 
       <div className="mt-5">
@@ -90,8 +90,11 @@ export function UploadPage() {
                   {dragging ? "Drop file here" : "Drop signal file or click to browse"}
                 </p>
                 <p className="mt-2 text-xs" style={{ color: "#9ca3af" }}>
-                  WAV, IQ (.iq .raw .cf32 .cs16) — max 500 MB
+                  WAV, OGG, IQ (.iq .raw .cf32 .cs16) — max 500 MB
                 </p>
+                <Link to="/live-mic" className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium transition-colors" style={{ color: "#e97b2c" }} onClick={(e) => e.stopPropagation()}>
+                  <Mic className="h-3.5 w-3.5" /> Or use live microphone
+                </Link>
               </motion.div>
             )}
 

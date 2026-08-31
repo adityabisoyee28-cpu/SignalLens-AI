@@ -57,14 +57,15 @@ function nextPow2(n: number): number {
   return p;
 }
 
-// ─── WAV Decoding ─────────────────────────────────────────────────────
+// ─── Audio Decoding (WAV, OGG, MP3, etc.) ────────────────────────────
+// Web Audio API decodes WAV, OGG Vorbis, OGG Opus, MP3, AAC, FLAC, etc.
 
-async function decodeWav(file: File): Promise<{ samples: Float64Array; sampleRate: number }> {
+async function decodeAudioFile(file: File): Promise<{ samples: Float64Array; sampleRate: number }> {
   const arrayBuf = await file.arrayBuffer();
   const ctx = new OfflineAudioContext(1, 1, 44100);
   const audioBuf = await ctx.decodeAudioData(arrayBuf);
 
-  // Mix down to mono if stereo (Web Audio returns Float32Array, convert to Float64Array)
+  // Mix down to mono if stereo
   let mono: Float64Array;
   if (audioBuf.numberOfChannels === 1) {
     mono = Float64Array.from(audioBuf.getChannelData(0));
@@ -468,15 +469,16 @@ function argMax(arr: Float64Array): number {
 
 export async function analyzeFileInBrowser(
   file: File,
-  format: "WAV" | "IQ",
+  format: "WAV" | "IQ" | "OGG",
   sampleRateOverride?: number,
 ): Promise<AnalysisResult> {
   // Step 1: Load samples
   let samples: Float64Array;
   let sampleRate: number;
 
-  if (format === "WAV") {
-    const decoded = await decodeWav(file);
+  if (format === "WAV" || format === "OGG") {
+    // Web Audio API handles WAV, OGG Vorbis, OGG Opus, MP3, AAC, FLAC
+    const decoded = await decodeAudioFile(file);
     samples = decoded.samples;
     sampleRate = decoded.sampleRate;
   } else {

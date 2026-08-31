@@ -1,4 +1,4 @@
-export type SignalFormat = "WAV" | "IQ";
+export type SignalFormat = "WAV" | "IQ" | "OGG";
 
 export interface SignalFile {
   id: string;

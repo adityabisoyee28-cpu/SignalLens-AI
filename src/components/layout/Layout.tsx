@@ -9,6 +9,7 @@ const sections = [
     items: [
       { to: "/dashboard", label: "Overview" },
       { to: "/upload", label: "Analyze" },
+      { to: "/live-mic", label: "Live Mic" },
     ],
   },
   {

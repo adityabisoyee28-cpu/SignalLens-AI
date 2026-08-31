@@ -2,8 +2,9 @@ import type { SignalFormat } from "@/types/signal";
 
 // ─── Accepted Extensions ───────────────────────────────────────────────
 const WAV_EXTENSIONS = [".wav"];
+const OGG_EXTENSIONS = [".ogg", ".oga"];
 const IQ_EXTENSIONS = [".iq", ".raw", ".cf32", ".cs16"];
-const ALL_EXTENSIONS = [...WAV_EXTENSIONS, ...IQ_EXTENSIONS];
+const ALL_EXTENSIONS = [...WAV_EXTENSIONS, ...OGG_EXTENSIONS, ...IQ_EXTENSIONS];
 
 // ─── Size Limits ───────────────────────────────────────────────────────
 // 500 MB — generous for large IQ captures, but still bounded
@@ -40,11 +41,16 @@ function isWavFile(file: File): boolean {
   const ext = getExtension(file.name);
   if (WAV_EXTENSIONS.includes(ext)) return true;
 
-  // WAV magic bytes: RIFF....WAVE
   const isWavMagic =
     file.size >= 12 &&
-    file.type === "audio/wav" || file.type === "audio/wave" || file.type === "audio/x-wav";
+    (file.type === "audio/wav" || file.type === "audio/wave" || file.type === "audio/x-wav");
   return isWavMagic;
+}
+
+function isOggFile(file: File): boolean {
+  const ext = getExtension(file.name);
+  if (OGG_EXTENSIONS.includes(ext)) return true;
+  return file.type === "audio/ogg" || file.type === "audio/vorbis";
 }
 
 function isIQFile(file: File): boolean {
@@ -84,17 +90,17 @@ export function validateFile(
   }
 
   // Check extension
-  if (!isWavFile(file) && !isIQFile(file)) {
+  if (!isWavFile(file) && !isOggFile(file) && !isIQFile(file)) {
     const ext = getExtension(file.name) || "unknown";
     return {
       valid: false,
       format: null,
-      error: `Unsupported file format (".${ext.slice(1)}"). Accepted formats: ${ALL_EXTENSIONS.join(", ")}`,
+      error: `Unsupported file format ("${ext}"). Accepted formats: ${ALL_EXTENSIONS.join(", ")}`,
       errorCode: "INVALID_EXTENSION",
     };
   }
 
-  const format: SignalFormat = isWavFile(file) ? "WAV" : "IQ";
+  const format: SignalFormat = isWavFile(file) ? "WAV" : isOggFile(file) ? "OGG" : "IQ";
 
   // Check file size — upper limit
   if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -134,6 +140,7 @@ export function validateFile(
 
 export function getMimeType(file: File): string {
   if (isWavFile(file)) return "audio/wav";
+  if (isOggFile(file)) return "audio/ogg";
   const ext = getExtension(file.name);
   const mimeMap: Record<string, string> = {
     ".iq": "application/octet-stream",

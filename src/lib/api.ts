@@ -16,6 +16,55 @@
 import type { SignalFormat, AnalysisResult } from "@/types/signal";
 import { analyzeFileInBrowser } from "@/lib/signal-analyzer";
 
+// ─── OGG → WAV Conversion ─────────────────────────────────────────────
+// Web Audio API decodes OGG; we re-encode as WAV for backend upload.
+
+async function oggToWavBlob(file: File): Promise<File> {
+  const arrayBuf = await file.arrayBuffer();
+  const ctx = new OfflineAudioContext(1, 1, 44100);
+  const audioBuf = await ctx.decodeAudioData(arrayBuf);
+
+  // Encode as WAV (16-bit PCM)
+  const numChannels = 1;
+  const sampleRate = audioBuf.sampleRate;
+  const length = audioBuf.length;
+  const bytesPerSample = 2;
+  const dataSize = length * numChannels * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true); // chunk size
+  view.setUint16(20, 1, true);  // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  view.setUint16(34, 16, true); // bits per sample
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  const samples = audioBuf.getChannelData(0);
+  let offset = 44;
+  for (let i = 0; i < length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    offset += 2;
+  }
+
+  return new File([buffer], file.name.replace(/\.og[ga]?$/i, ".wav"), {
+    type: "audio/wav",
+    lastModified: file.lastModified,
+  });
+}
+
 // ─── Configuration ─────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -53,16 +102,29 @@ export async function uploadAndAnalyze(
   iqDtype?: string,
   onProgress?: UploadProgressCallback,
 ): Promise<AnalysisResult> {
+  // OGG: decode client-side to WAV, then send to backend (or analyze locally)
+  if (format === "OGG") {
+    try {
+      const wavFile = await oggToWavBlob(file);
+      if (API_BASE) {
+        return await analyzeOnBackend(wavFile, "WAV", undefined, undefined, onProgress);
+      }
+      return analyzeFileInBrowser(wavFile, "WAV", undefined);
+    } catch (err) {
+      // Fallback: pure client-side analysis with OGG
+      console.warn("OGG conversion failed, using client-side DSP:", err);
+      return analyzeFileInBrowser(file, format, sampleRate);
+    }
+  }
+
   if (API_BASE) {
     try {
       return await analyzeOnBackend(file, format, sampleRate, iqDtype, onProgress);
     } catch (err) {
-      // Backend unreachable — fall back to real client-side analysis
       console.warn("Backend unavailable, using client-side DSP:", err);
       return analyzeFileInBrowser(file, format, sampleRate);
     }
   }
-  // No backend configured — perform real analysis in the browser
   return analyzeFileInBrowser(file, format, sampleRate);
 }
 

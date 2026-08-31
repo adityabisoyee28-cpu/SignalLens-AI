@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function LandingPage() {
@@ -17,15 +17,23 @@ export function LandingPage() {
                 Signal Analysis Workbench
               </p>
               <p className="mt-3 text-sm max-w-md" style={{ color: "#6b7280" }}>
-                Automated analysis for WAV and IQ signals. DSP, feature extraction, classification.
+                Automated analysis for WAV, OGG, and IQ signals. DSP, feature extraction, classification.
               </p>
             </div>
-            <Link to="/upload">
-              <Button className="gap-2">
-                Analyze Signal
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link to="/live-mic">
+                <Button variant="outline" className="gap-2">
+                  <Mic className="h-3.5 w-3.5" />
+                  Live Mic
+                </Button>
+              </Link>
+              <Link to="/upload">
+                <Button className="gap-2">
+                  Analyze Signal
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
