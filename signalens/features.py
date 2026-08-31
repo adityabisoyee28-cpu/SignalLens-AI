@@ -12,16 +12,16 @@ Functions for computing signal features from preprocessed signals.
   Combined:      extract_features()
 
 All scientific logic preserved from validated Colab prototype.
+Scipy dependencies removed — uses NumPy only.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from scipy import signal as sp_signal
-from scipy.fft import fft, fftfreq, fftshift
+from numpy.fft import fft, fftfreq, fftshift
 
 
 # ─── Configuration defaults (matching Colab CONFIG) ────────────────────
@@ -29,6 +29,133 @@ from scipy.fft import fft, fftfreq, fftshift
 DEFAULT_NPERSEG_PSD: int = 1024
 DEFAULT_NPERSEG_SPEC: int = 256
 DEFAULT_NOVERLAP_SPEC: int = 128
+
+
+# ─── Welch PSD (pure NumPy) ───────────────────────────────────────────
+
+def _welch_psd(
+    signal: np.ndarray,
+    fs: float,
+    nperseg: int,
+    scaling: str = "density",
+    return_onesided: bool = True,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Compute Power Spectral Density using Welch's method (pure NumPy).
+
+    Splits the signal into overlapping segments, windows each segment,
+    computes the periodogram, and averages.
+    """
+    x = np.asarray(signal)
+    # Handle complex signals: use magnitude for PSD
+    is_complex = np.iscomplexobj(x)
+    if is_complex:
+        x = np.abs(x).astype(np.float64)
+    else:
+        x = x.astype(np.float64)
+    if x.ndim > 1:
+        x = x[:, 0] if x.shape[1] == 1 else np.mean(x, axis=1)
+
+    n = len(x)
+    noverlap = nperseg // 2
+    step = nperseg - noverlap
+
+    # Hann window (periodic)
+    window = np.hanning(nperseg + 1)[:-1]
+
+    # Scale factor
+    if scaling == "density":
+        scale = fs * np.sum(window ** 2)
+    else:
+        scale = np.sum(window ** 2)
+
+    nperseg_actual = min(nperseg, n)
+
+    # Build segments
+    segments = []
+    for start in range(0, n - nperseg_actual + 1, step):
+        seg = x[start : start + nperseg_actual].copy()
+        seg *= window[:nperseg_actual]
+        segments.append(seg)
+
+    if not segments:
+        # Fallback: use entire signal
+        seg = x.copy()
+        seg *= window[: len(seg)]
+        segments.append(seg)
+
+    # Compute periodograms and average
+    fft_size = nperseg_actual
+    n_freqs = fft_size // 2 + 1  # always onesided for magnitude PSD
+
+    psd_sum = np.zeros(n_freqs, dtype=np.float64)
+
+    for seg in segments:
+        spectrum = fft(seg, n=fft_size)
+        spectrum = spectrum[:n_freqs]
+        periodogram = np.abs(spectrum) ** 2
+        psd_sum += periodogram
+
+    psd_avg = psd_sum / (len(segments) * scale)
+    freqs = np.arange(n_freqs) * fs / fft_size
+
+    return freqs, psd_avg
+
+
+def _spectrogram(
+    signal: np.ndarray,
+    fs: float,
+    nperseg: int,
+    noverlap: int,
+    return_onesided: bool = True,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute a spectrogram (pure NumPy).
+
+    Returns (freqs, times, Sxx) where Sxx is in linear power scale.
+    """
+    x = np.asarray(signal)
+    # Handle complex signals: use magnitude for spectrogram
+    is_complex = np.iscomplexobj(x)
+    if is_complex:
+        x = np.abs(x).astype(np.float64)
+    else:
+        x = x.astype(np.float64)
+    if x.ndim > 1:
+        x = x[:, 0] if x.shape[1] == 1 else np.mean(x, axis=1)
+
+    n = len(x)
+    window = np.hanning(nperseg + 1)[:-1]
+    step = nperseg - noverlap
+
+    nperseg_actual = min(nperseg, n)
+
+    # Collect segment FFTs
+    specs = []
+    times = []
+    for start in range(0, n - nperseg_actual + 1, step):
+        seg = x[start : start + nperseg_actual].copy()
+        seg *= window[:nperseg_actual]
+        spectrum = fft(seg, n=nperseg_actual)
+        n_freqs = nperseg_actual // 2 + 1
+        spectrum = spectrum[:n_freqs]
+        specs.append(np.abs(spectrum) ** 2)
+        times.append((start + nperseg_actual / 2) / fs)
+
+    if not specs:
+        # Fallback
+        seg = x.copy()
+        seg *= window[: len(seg)]
+        spectrum = fft(seg, n=nperseg_actual)
+        n_freqs = nperseg_actual // 2 + 1
+        spectrum = spectrum[:n_freqs]
+        specs.append(np.abs(spectrum) ** 2)
+        times.append(nperseg_actual / 2 / fs)
+
+    Sxx = np.column_stack(specs)
+    freqs = np.arange(Sxx.shape[0]) * fs / nperseg_actual
+
+    return freqs, np.array(times), Sxx
 
 
 # ─── Data classes ──────────────────────────────────────────────────────
@@ -209,12 +336,10 @@ def calculate_psd(
     nperseg: int | None = None,
 ) -> PSDResult:
     """
-    Compute PSD using Welch's method.
+    Compute PSD using Welch's method (pure NumPy implementation).
 
     Preserves the validated logic from Colab Cell 14.
     """
-    is_complex = np.iscomplexobj(signal)
-
     if nperseg is None:
         nperseg = min(DEFAULT_NPERSEG_PSD, len(signal) // 4)
     else:
@@ -222,18 +347,17 @@ def calculate_psd(
 
     nperseg = max(nperseg, 256)  # safety floor
 
-    freqs_psd, psd = sp_signal.welch(
+    freqs_psd, psd = _welch_psd(
         signal,
         fs=sample_rate,
         nperseg=nperseg,
         scaling="density",
-        return_onesided=(not is_complex),
     )
 
     return PSDResult(
         frequency=freqs_psd,
         power=psd,
-        is_onesided=(not is_complex),
+        is_onesided=True,
     )
 
 
@@ -246,12 +370,10 @@ def calculate_spectrogram(
     noverlap: int | None = None,
 ) -> SpectrogramResult:
     """
-    Compute a spectrogram using scipy.signal.spectrogram.
+    Compute a spectrogram (pure NumPy implementation).
 
     Preserves the validated logic from Colab Cell 16.
     """
-    is_complex = np.iscomplexobj(signal)
-
     if nperseg is None:
         nperseg = min(DEFAULT_NPERSEG_SPEC, len(signal) // 8)
     else:
@@ -264,12 +386,11 @@ def calculate_spectrogram(
     else:
         noverlap = min(noverlap, nperseg // 2)
 
-    f_spec, t_spec, Sxx = sp_signal.spectrogram(
+    f_spec, t_spec, Sxx = _spectrogram(
         signal,
         fs=sample_rate,
         nperseg=nperseg,
         noverlap=noverlap,
-        return_onesided=(not is_complex),
     )
 
     # Convert to dB
@@ -279,7 +400,7 @@ def calculate_spectrogram(
         time=t_spec,
         frequency=f_spec,
         power=Sxx_db,
-        is_onesided=(not is_complex),
+        is_onesided=True,
     )
 
 
