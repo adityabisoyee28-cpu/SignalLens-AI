@@ -25,11 +25,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
+import wave
+
 import numpy as np
 
 # ─── Configuration ─────────────────────────────────────────────────────
 
 DEFAULT_IQ_SAMPLE_RATE: float = 1_000_000.0  # 1 Msps — used only when fs unknown
+
 DEFAULT_IQ_DTYPE: str = "float32"             # "float32" (interleaved) or "complex64"
 
 WAV_EXTENSIONS = {".wav"}
@@ -97,22 +100,51 @@ def validate_file(filename: str, data: bytes) -> dict:
 
 def load_wav(data: bytes) -> tuple[np.ndarray, float]:
     """
-    Load a WAV file from raw bytes.
+    Load a WAV file from raw bytes using the standard-library wave module.
 
     Returns:
-        (signal, sample_rate) where signal is float64 with shape (samples,)
-        or (samples, channels).
+        (signal, sample_rate) where signal is float64 with shape
+        (samples,) for mono or (samples, channels) for multi-channel.
 
-    Preserves the validated logic from Colab Cell 5.
+    Handles standard PCM WAV formats (8/16/24/32-bit int, 32-bit float).
     """
-    import soundfile as sf
-
     try:
-        audio, fs = sf.read(io.BytesIO(data), always_2d=True)
+        with wave.open(io.BytesIO(data), "rb") as wf:
+            n_channels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            fs = wf.getframerate()
+            n_frames = wf.getnframes()
+            raw = wf.readframes(n_frames)
+    except wave.Error as e:
+        raise LoadError(f"Failed to parse WAV header: {e}") from e
     except Exception as e:
         raise LoadError(f"Failed to read WAV data: {e}") from e
 
-    signal = audio.astype(np.float64)
+    # Decode by sample width
+    if sampwidth == 1:
+        # 8-bit WAV: unsigned [0, 255]
+        signal = np.frombuffer(raw, dtype=np.uint8).astype(np.float64)
+        signal = (signal - 128.0) / 128.0
+    elif sampwidth == 2:
+        signal = np.frombuffer(raw, dtype=np.int16).astype(np.float64)
+        signal = signal / 32768.0
+    elif sampwidth == 3:
+        # 24-bit: manually decode from bytes
+        arr = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3)
+        signal = (arr[:, 0].astype(np.int64)
+                  | (arr[:, 1].astype(np.int64) << 8)
+                  | (arr[:, 2].astype(np.int64) << 16))
+        signal = np.where(signal >= 0x800000, signal - 0x1000000, signal)
+        signal = signal.astype(np.float64) / 8388608.0
+    elif sampwidth == 4:
+        signal = np.frombuffer(raw, dtype=np.int32).astype(np.float64)
+        signal = signal / 2147483648.0
+    else:
+        raise LoadError(f"Unsupported WAV bit depth: {sampwidth * 8}-bit")
+
+    if n_channels > 1:
+        signal = signal.reshape(-1, n_channels)
+
     return signal, float(fs)
 
 
