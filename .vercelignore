@@ -1,17 +1,12 @@
 node_modules
 dist
-src
-public
 tests
-supabase
 __pycache__
 .pytest_cache
 *.pyc
 package-lock.json
 bun.lock
-README.md
 .git
-.github
 .vscode
 train_model.py
 .env
