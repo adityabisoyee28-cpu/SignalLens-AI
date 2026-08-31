@@ -70,14 +70,13 @@ _ml_scaler = None
 
 
 def _load_ml_model():
-    """Load the pre-trained ML classifier from disk."""
+    """Load the pre-trained ML classifier from the lightweight NPZ file."""
     global _ml_model, _ml_scaler
     try:
-        model_path = Path(__file__).resolve().parent.parent / "signalens_model.joblib"
-        scaler_path = Path(__file__).resolve().parent.parent / "signalens_scaler.joblib"
-        if model_path.exists() and scaler_path.exists():
-            logger.info("Loading pre-trained ML classifier...")
-            _ml_model, _ml_scaler = load_model(model_path, scaler_path)
+        model_path = Path(__file__).resolve().parent.parent / "signalens_model.npz"
+        if model_path.exists():
+            logger.info("Loading pre-trained ML classifier (NPZ)...")
+            _ml_model, _ml_scaler = load_model(model_path)
             logger.info("ML classifier loaded from disk.")
         else:
             logger.info("No pre-trained model found — ML predictions disabled.")

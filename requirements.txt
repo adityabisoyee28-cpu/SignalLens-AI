@@ -6,22 +6,11 @@ fastapi>=0.100.0
 uvicorn>=0.23.0               # Vercel uses its own ASGI runtime; [standard] extras not needed
 python-multipart>=0.0.6       # Required for FastAPI file uploads
 
-# Core signal processing (scipy removed — all DSP uses numpy only)
+# Core signal processing (all DSP uses NumPy only — no scipy)
 numpy>=1.24.0
-
-# Audio file I/O (WAV loaded via stdlib wave module — no external dependency)
-
-# Machine learning
-scikit-learn>=1.3.0
-
-# Model persistence
-joblib>=1.3.0
 
 # Pydantic (pulled by FastAPI, pinned for stability)
 pydantic>=2.0.0
 
 # Supabase database client
 supabase>=2.0.0
-
-# Optional: visualization (for development/debugging only)
-# matplotlib>=3.7.0

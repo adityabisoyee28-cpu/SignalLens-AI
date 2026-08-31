@@ -13,7 +13,7 @@
   ],
   "functions": {
     "api/index.py": {
-      "includeFiles": "signalens/**/*.{py,txt},signalens_*.joblib,requirements.txt"
+      "includeFiles": "signalens/**/*.{py,txt},signalens_model.npz,requirements.txt"
     }
   }
 }

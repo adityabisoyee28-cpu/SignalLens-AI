@@ -1,18 +1,15 @@
 """
-SignalLens AI — ML Classifier
-================================
+SignalLens AI — ML Classifier (Lightweight)
+=============================================
 
-Machine learning module for signal classification.
+Pure-NumPy RandomForest prediction — no scikit-learn, scipy, or joblib
+required at runtime.
 
-  - Synthetic signal generation for training
-  - Feature extraction for ML pipeline
-  - Model training and evaluation
-  - Inference/prediction on new signals
+The trained model is stored in signalens_model.npz (compressed NumPy arrays).
+The original sklearn .joblib files are retained for training/development only.
 
-The classifier is a research demonstration trained on synthetic data.
-Real off-air accuracy will differ from synthetic benchmarks.
-
-Preserves the validated logic from Colab Cells 20, 51–57.
+Prediction is equivalent to sklearn RandomForestClassifier.predict_proba()
+for the same model parameters.
 """
 
 from __future__ import annotations
@@ -34,7 +31,187 @@ SYNTHETIC_LABELS = [
 ]
 
 
-# ─── Synthetic Signal Generators ───────────────────────────────────────
+# ─── Lightweight Model State ──────────────────────────────────────────
+
+class RandomForestModel:
+    """
+    Lightweight RandomForest inference engine.
+
+    Stores the trained tree structure as NumPy arrays and performs
+    prediction by traversing each tree from root to leaf, then
+    averaging class probabilities across all trees.
+    """
+
+    def __init__(
+        self,
+        classes: np.ndarray,
+        n_trees: int,
+        node_counts: np.ndarray,
+        features: np.ndarray,
+        thresholds: np.ndarray,
+        children_left: np.ndarray,
+        children_right: np.ndarray,
+        values: np.ndarray,
+    ):
+        self.classes = classes
+        self.n_trees = n_trees
+        self.node_counts = node_counts
+        self.features = features
+        self.thresholds = thresholds
+        self.children_left = children_left
+        self.children_right = children_right
+        self.values = values
+
+    def predict_proba_single(self, X: np.ndarray) -> np.ndarray:
+        """
+        Predict class probabilities for a single feature vector.
+
+        Args:
+            X: 1-D array of shape (n_features,) — already scaled.
+
+        Returns:
+            1-D array of shape (n_classes,) with class probabilities.
+        """
+        all_votes = np.zeros(len(self.classes), dtype=np.float64)
+
+        for i in range(self.n_trees):
+            node = 0
+            # Traverse tree until leaf (children_left == -1)
+            while self.children_left[i, node] != -1:
+                feat = self.features[i, node]
+                thr = self.thresholds[i, node]
+                if X[feat] <= thr:
+                    node = self.children_left[i, node]
+                else:
+                    node = self.children_right[i, node]
+            all_votes += self.values[i, node, :]
+
+        # Normalize to probabilities
+        total = all_votes.sum()
+        if total > 0:
+            return all_votes / total
+        return np.ones(len(self.classes)) / len(self.classes)
+
+    def predict_single(self, X: np.ndarray) -> tuple[str, float]:
+        """
+        Predict class and confidence for a single feature vector.
+
+        Returns:
+            (predicted_class, confidence)
+        """
+        proba = self.predict_proba_single(X)
+        idx = int(np.argmax(proba))
+        return str(self.classes[idx]), float(proba[idx])
+
+
+class StandardScalerNP:
+    """
+    Lightweight StandardScaler — pure NumPy.
+    """
+
+    def __init__(self, mean: np.ndarray, scale: np.ndarray):
+        self.mean_ = mean
+        self.scale_ = scale
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """Standardize features by removing the mean and scaling to unit variance."""
+        return (X - self.mean_) / self.scale_
+
+
+# ─── Model Loading ─────────────────────────────────────────────────────
+
+_rf_model: RandomForestModel | None = None
+_scaler: StandardScalerNP | None = None
+
+
+def load_model(
+    model_path: str | Path = "signalens_model.npz",
+    scaler_path: str | Path | None = None,
+) -> tuple[RandomForestModel, StandardScalerNP]:
+    """
+    Load the lightweight model and scaler from an NPZ file.
+
+    The NPZ file contains all model parameters and scaler statistics
+    in a single compressed archive.
+
+    Args:
+        model_path: Path to signalens_model.npz
+        scaler_path: Ignored (scaler is inside the NPZ).
+
+    Returns:
+        (model, scaler) tuple.
+    """
+    data = np.load(str(model_path), allow_pickle=True)
+
+    model = RandomForestModel(
+        classes=data["classes"],
+        n_trees=int(data["n_trees"]),
+        node_counts=data["node_counts"],
+        features=data["features"],
+        thresholds=data["thresholds"],
+        children_left=data["children_left"],
+        children_right=data["children_right"],
+        values=data["values"],
+    )
+
+    scaler = StandardScalerNP(
+        mean=data["scaler_mean"],
+        scale=data["scaler_scale"],
+    )
+
+    return model, scaler
+
+
+# ─── Inference ──────────────────────────────────────────────────────────
+
+def predict_signal(
+    signal: np.ndarray,
+    sample_rate: float,
+    model: RandomForestModel | None = None,
+    scaler: StandardScalerNP | None = None,
+    model_path: str | Path | None = None,
+    scaler_path: str | Path | None = None,
+) -> tuple[str, dict[str, float]]:
+    """
+    Classify a signal using the lightweight RandomForest model.
+
+    Args:
+        signal: Preprocessed signal array.
+        sample_rate: Sampling rate in Hz.
+        model: Pre-loaded model. If None, loads from model_path.
+        scaler: Pre-loaded scaler. If None, loads from model_path.
+        model_path: Path to saved NPZ model file.
+        scaler_path: Ignored (kept for backward compatibility).
+
+    Returns:
+        (predicted_class, {class: probability, ...})
+
+    Raises:
+        RuntimeError: If no model is available.
+    """
+    # Load model if not provided
+    if model is None or scaler is None:
+        if model_path is None:
+            raise RuntimeError(
+                "No model provided. Pass model/scaler or set model_path."
+            )
+        model, scaler = load_model(model_path)
+
+    # Extract features
+    feat = extract_ml_features(signal, sample_rate)
+    feat_scaled = scaler.transform(feat.reshape(1, -1))[0]
+
+    # Predict
+    pred_class, confidence = model.predict_single(feat_scaled)
+    proba = model.predict_proba_single(feat_scaled)
+
+    return pred_class, dict(zip(model.classes.tolist(), proba.tolist()))
+
+
+# ─── Training (for development only — requires scikit-learn) ───────────
+# The functions below are retained for retraining purposes.
+# They are NOT used in the deployed Vercel function.
+# The .joblib files are NOT included in the Vercel bundle.
 
 def _generate_bpsk(
     n_symbols: int = 512,
@@ -43,7 +220,7 @@ def _generate_bpsk(
     snr_db: float = 15.0,
     rng: np.random.Generator | None = None,
 ) -> np.ndarray:
-    """Generate a synthetic BPSK signal. Matches Colab Cell 20."""
+    """Generate a synthetic BPSK signal."""
     if rng is None:
         rng = np.random.default_rng()
     symbols = rng.choice([-1, 1], size=n_symbols)
@@ -62,7 +239,7 @@ def _generate_qpsk(
     snr_db: float = 15.0,
     rng: np.random.Generator | None = None,
 ) -> np.ndarray:
-    """Generate a synthetic QPSK signal. Matches Colab Cell 20."""
+    """Generate a synthetic QPSK signal."""
     if rng is None:
         rng = np.random.default_rng()
     symbols = rng.choice(
@@ -83,7 +260,7 @@ def _generate_qam16(
     snr_db: float = 15.0,
     rng: np.random.Generator | None = None,
 ) -> np.ndarray:
-    """Generate a synthetic 16-QAM signal. Matches Colab Cell 20."""
+    """Generate a synthetic 16-QAM signal."""
     if rng is None:
         rng = np.random.default_rng()
     levels = np.array([-3, -1, 1, 3])
@@ -99,8 +276,6 @@ def _generate_qam16(
     return base + noise
 
 
-# ─── Synthetic Dataset Generators (for extended training) ──────────────
-
 def _make_sine(
     t: np.ndarray,
     freq: float = 1000.0,
@@ -108,7 +283,7 @@ def _make_sine(
     noise: float = 0.0,
     rng: np.random.Generator | None = None,
 ) -> np.ndarray:
-    """Generate a sine signal with optional noise. Matches Colab Cell 51."""
+    """Generate a sine signal with optional noise."""
     sig = amp * np.sin(2 * np.pi * freq * t)
     if noise > 0:
         if rng is None:
@@ -124,7 +299,7 @@ def _make_am(
     depth: float = 0.5,
     amp: float = 0.6,
 ) -> np.ndarray:
-    """Generate an AM signal. Matches Colab Cell 51."""
+    """Generate an AM signal."""
     return amp * (1 + depth * np.sin(2 * np.pi * fm * t)) * np.sin(
         2 * np.pi * fc * t
     )
@@ -137,7 +312,7 @@ def _make_fm(
     deviation: float = 600.0,
     amp: float = 0.6,
 ) -> np.ndarray:
-    """Generate an FM signal. Matches Colab Cell 51."""
+    """Generate an FM signal."""
     return amp * np.sin(
         2 * np.pi * fc * t + (deviation / fm) * np.sin(2 * np.pi * fm * t)
     )
@@ -150,22 +325,20 @@ def _make_pm(
     phase_dev: float = 1.0,
     amp: float = 0.6,
 ) -> np.ndarray:
-    """Generate a PM signal. Matches Colab Cell 51."""
+    """Generate a PM signal."""
     return amp * np.sin(
         2 * np.pi * fc * t + phase_dev * np.sin(2 * np.pi * fm * t)
     )
 
 
 def _make_multi_tone(t: np.ndarray, amp: float = 1.0) -> np.ndarray:
-    """Generate a multi-frequency signal. Matches Colab Cell 51."""
+    """Generate a multi-frequency signal."""
     return amp * (
         0.40 * np.sin(2 * np.pi * 800 * t)
         + 0.35 * np.sin(2 * np.pi * 1800 * t)
         + 0.25 * np.sin(2 * np.pi * 3200 * t)
     )
 
-
-# ─── Training ──────────────────────────────────────────────────────────
 
 def generate_synthetic_dataset(
     n_per_class: int = 100,
@@ -175,44 +348,28 @@ def generate_synthetic_dataset(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Generate a synthetic training dataset with 6 signal classes.
-
-    Preserves the validated logic from Colab Cell 51.
-
-    Returns:
-        (X, y) — feature matrix and labels.
     """
     rng = np.random.default_rng(seed)
     t = np.arange(0, duration, 1.0 / fs)
 
     generators = {
         "sine": lambda: _make_sine(
-            t,
-            freq=rng.uniform(800, 1200),
-            amp=rng.uniform(0.5, 0.9),
+            t, freq=rng.uniform(800, 1200), amp=rng.uniform(0.5, 0.9),
         ),
         "noisy_sine": lambda: _make_sine(
-            t,
-            freq=rng.uniform(800, 1200),
-            amp=0.7,
-            noise=rng.uniform(0.10, 0.25),
-            rng=rng,
+            t, freq=rng.uniform(800, 1200), amp=0.7,
+            noise=rng.uniform(0.10, 0.25), rng=rng,
         ),
         "am": lambda: _make_am(
-            t,
-            fc=rng.uniform(4000, 6000),
-            fm=rng.uniform(150, 300),
+            t, fc=rng.uniform(4000, 6000), fm=rng.uniform(150, 300),
             depth=rng.uniform(0.3, 0.7),
         ),
         "fm": lambda: _make_fm(
-            t,
-            fc=rng.uniform(4000, 6000),
-            fm=rng.uniform(100, 250),
+            t, fc=rng.uniform(4000, 6000), fm=rng.uniform(100, 250),
             deviation=rng.uniform(400, 900),
         ),
         "pm": lambda: _make_pm(
-            t,
-            fc=rng.uniform(3000, 5000),
-            fm=rng.uniform(80, 200),
+            t, fc=rng.uniform(3000, 5000), fm=rng.uniform(80, 200),
             phase_dev=rng.uniform(0.6, 1.5),
         ),
         "multi_tone": lambda: _make_multi_tone(t, amp=rng.uniform(0.8, 1.1)),
@@ -243,10 +400,7 @@ def train_model(
     """
     Train a Random Forest classifier on extracted features.
 
-    Preserves the validated logic from Colab Cells 53–54.
-
-    Returns:
-        Dict with keys: model, scaler, X_test, y_test, accuracy, classes.
+    REQUIRES scikit-learn (development only).
     """
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
@@ -277,76 +431,63 @@ def train_model(
     }
 
 
-# ─── Model Persistence ─────────────────────────────────────────────────
-
 def save_model(
     model: Any,
     scaler: Any,
-    model_path: str | Path = "signalens_model.joblib",
-    scaler_path: str | Path = "signalens_scaler.joblib",
-) -> None:
-    """Save trained model and scaler to disk. Matches Colab Cell 56."""
-    import joblib
-
-    joblib.dump(model, str(model_path))
-    joblib.dump(scaler, str(scaler_path))
-
-
-def load_model(
-    model_path: str | Path = "signalens_model.joblib",
-    scaler_path: str | Path = "signalens_scaler.joblib",
-) -> tuple[Any, Any]:
-    """Load trained model and scaler from disk."""
-    import joblib
-
-    model = joblib.load(str(model_path))
-    scaler = joblib.load(str(scaler_path))
-    return model, scaler
-
-
-# ─── Inference ──────────────────────────────────────────────────────────
-
-def predict_signal(
-    signal: np.ndarray,
-    sample_rate: float,
-    model: Any = None,
-    scaler: Any = None,
-    model_path: str | Path | None = None,
+    model_path: str | Path = "signalens_model.npz",
     scaler_path: str | Path | None = None,
-) -> tuple[str, dict[str, float]]:
+) -> None:
     """
-    Classify a signal using the trained ML model.
+    Save trained model to lightweight NPZ format.
 
-    Preserves the validated logic from Colab Cells 21 and 57.
-
-    Args:
-        signal: Preprocessed signal array.
-        sample_rate: Sampling rate in Hz.
-        model: Pre-loaded sklearn model. If None, loads from model_path.
-        scaler: Pre-loaded StandardScaler. If None, loads from scaler_path.
-        model_path: Path to saved model file.
-        scaler_path: Path to saved scaler file.
-
-    Returns:
-        (predicted_class, {class: probability, ...})
-
-    Raises:
-        RuntimeError: If no model is available.
+    The NPZ contains all tree parameters and scaler statistics
+    in a single file — no scikit-learn or joblib needed at inference time.
     """
-    # Load model if not provided
-    if model is None or scaler is None:
-        if model_path is None or scaler_path is None:
-            raise RuntimeError(
-                "No model provided. Pass model/scaler or set model_path/scaler_path."
-            )
-        model, scaler = load_model(model_path, scaler_path)
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler
 
-    # Extract features
-    feat = extract_ml_features(signal, sample_rate).reshape(1, -1)
-    feat_s = scaler.transform(feat)
+    if not isinstance(model, RandomForestClassifier):
+        raise TypeError(f"Expected RandomForestClassifier, got {type(model)}")
+    if not isinstance(scaler, StandardScaler):
+        raise TypeError(f"Expected StandardScaler, got {type(scaler)}")
 
-    # Predict
-    pred = model.predict(feat_s)[0]
-    proba = model.predict_proba(feat_s)[0]
+    classes = model.classes_
+    n_trees = model.n_estimators
+    n_classes = len(classes)
 
-    return pred, dict(zip(model.classes_, proba))
+    node_counts = np.array([est.tree_.node_count for est in model.estimators_], dtype=np.int32)
+    max_nodes = int(node_counts.max())
+
+    features = np.full((n_trees, max_nodes), -1, dtype=np.int32)
+    thresholds = np.full((n_trees, max_nodes), 0.0, dtype=np.float64)
+    children_left = np.full((n_trees, max_nodes), -1, dtype=np.int32)
+    children_right = np.full((n_trees, max_nodes), -1, dtype=np.int32)
+    values = np.zeros((n_trees, max_nodes, n_classes), dtype=np.float64)
+
+    for i, est in enumerate(model.estimators_):
+        t = est.tree_
+        n = t.node_count
+        features[i, :n] = t.feature
+        thresholds[i, :n] = t.threshold
+        children_left[i, :n] = t.children_left
+        children_right[i, :n] = t.children_right
+        values[i, :n, :] = t.value[:, 0, :]
+
+    np.savez_compressed(
+        str(model_path),
+        classes=classes,
+        n_trees=np.array(n_trees),
+        node_counts=node_counts,
+        features=features,
+        thresholds=thresholds,
+        children_left=children_left,
+        children_right=children_right,
+        values=values,
+        scaler_mean=scaler.mean_,
+        scaler_scale=scaler.scale_,
+    )
+
+
+# ─── Backward-compatible aliases ────────────────────────────────────────
+# These exist so that train_model.py and tests can still reference them.
+save_model_joblib = None  # deprecated
