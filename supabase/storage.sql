@@ -21,8 +21,11 @@ VALUES (
         'audio/wav',
         'audio/x-wav',
         'audio/wave',
+        'audio/ogg',
+        'audio/vorbis',
         'application/octet-stream',         -- IQ/raw binary
-        'application/x-iq'
+        'application/x-iq',
+        'text/plain'                        -- IQ text captures
     ]
 )
 ON CONFLICT (id) DO NOTHING;

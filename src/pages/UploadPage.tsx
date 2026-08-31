@@ -79,7 +79,7 @@ export function UploadPage() {
             boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           }}
         >
-          <input ref={inputRef} type="file" accept=".wav,.iq,.raw,.cf32,.cs16" className="hidden" disabled={active}
+          <input ref={inputRef} type="file" accept=".wav,.ogg,.oga,.iq,.raw,.cf32,.cs16" className="hidden" disabled={active}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
 
           <AnimatePresence mode="wait">

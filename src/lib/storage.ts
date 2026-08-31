@@ -8,7 +8,7 @@
 
 import { supabase } from "./supabase";
 
-const BUCKET = "signals";
+const BUCKET = "signal-files";
 
 export interface StorageUploadResult {
   path: string;
@@ -70,13 +70,13 @@ export async function uploadSignalFile(
         msg.includes("policy")
       ) {
         msg =
-          "Storage access denied. The 'signals' bucket may need RLS policies configured in Supabase.";
+          "Storage access denied. The 'signal-files' bucket may need RLS policies configured in Supabase.";
       } else if (
         msg.includes("Bucket not found") ||
         msg.includes("bucket")
       ) {
         msg =
-          "Storage bucket 'signals' not found. Please create it in your Supabase dashboard.";
+          "Storage bucket 'signal-files' not found. Please create it in your Supabase dashboard.";
       }
       console.error("[Storage] Upload failed:", error);
       return {
